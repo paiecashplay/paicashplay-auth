@@ -3,16 +3,21 @@ FROM node:18 AS builder
 
 WORKDIR /app
 
+# Copier les fichiers de dépendances
 COPY package.json package-lock.json ./
+COPY prisma ./prisma/
+
+# Installer les dépendances
 RUN npm ci
 
+# Générer le client Prisma
+RUN npx prisma generate
+
+# Copier le code source
 COPY . .
 
-# Utiliser les variables d'environnement de production
-COPY .env.production .env
-# Forcer NODE_ENV pour la compilation
+# Build de l'application
 ENV NODE_ENV=production
-
 RUN npm run build
 
 # Étape 2 : image finale légère
@@ -20,13 +25,22 @@ FROM node:18-slim
 
 WORKDIR /app
 
-# Copie les fichiers de build
-COPY --from=builder /app ./
+# Installer les dépendances système pour Prisma
+RUN apt-get update -y && apt-get install -y openssl
 
-# Port Next.js
-ENV PORT 8080
-ENV NODE_ENV production
+# Copier les fichiers nécessaires
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/package-lock.json ./
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules ./node_modules
+
+# Variables d'environnement
+ENV NODE_ENV=production
+ENV PORT=8080
 
 EXPOSE 8080
 
-CMD ["npm", "start"]
+# Commande de démarrage avec migration
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npm start"]

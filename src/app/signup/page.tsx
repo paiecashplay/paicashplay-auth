@@ -66,10 +66,87 @@ export default function SignupPage() {
     setLoading(true);
     setError('');
 
+    // Handle social signup
+    if (socialData) {
+      try {
+        const response = await fetch('/api/auth/social-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            socialToken: new URLSearchParams(window.location.search).get('social'),
+            userType: formData.userType,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            phone: formData.phone,
+            country: formData.country,
+            clubName: formData.clubName,
+            federationName: formData.federationName,
+            position: formData.position,
+            dateOfBirth: formData.dateOfBirth,
+            nationality: formData.nationality
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          toast.success('Compte créé avec succès', 'Connexion automatique...');
+          setTimeout(() => router.push('/dashboard'), 1000);
+        } else {
+          toast.error('Erreur de création', data.error || 'Impossible de créer le compte');
+          setError(data.error || 'Erreur de création du compte');
+        }
+      } catch (error) {
+        setError('Erreur de connexion');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Regular signup
     if (formData.password !== formData.confirmPassword) {
       toast.error('Mots de passe différents', 'Veuillez vérifier que les mots de passe correspondent');
       setError('Les mots de passe ne correspondent pas');
       setLoading(false);
+      return;
+    }
+
+    // Handle social signup
+    if (socialData) {
+      try {
+        const response = await fetch('/api/auth/social-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            socialToken: new URLSearchParams(window.location.search).get('social'),
+            userType: formData.userType,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            phone: formData.phone,
+            country: formData.country,
+            clubName: formData.clubName,
+            federationName: formData.federationName,
+            position: formData.position,
+            dateOfBirth: formData.dateOfBirth,
+            nationality: formData.nationality
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          toast.success('Compte créé avec succès', 'Connexion automatique...');
+          setTimeout(() => router.push('/dashboard'), 1000);
+        } else {
+          toast.error('Erreur de création', data.error || 'Impossible de créer le compte');
+          setError(data.error || 'Erreur de création du compte');
+        }
+      } catch (error) {
+        setError('Erreur de connexion');
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -425,47 +502,51 @@ export default function SignupPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-3">
                 <i className="fas fa-envelope mr-2 text-paiecash"></i>
                 Adresse email <span className="text-red-500">*</span>
+                {socialData && <span className="text-sm text-gray-500 ml-2">(depuis {socialData.provider})</span>}
               </label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="input-field"
+                className={`input-field ${socialData ? 'bg-gray-50' : ''}`}
                 placeholder="votre@email.com"
+                disabled={!!socialData}
                 required
               />
             </div>
 
-            {/* Password */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  <i className="fas fa-lock mr-2 text-paiecash"></i>
-                  Mot de passe <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="input-field"
-                  placeholder="Minimum 8 caractères"
-                  required
-                />
+            {/* Password - Only for regular signup */}
+            {!socialData && (
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    <i className="fas fa-lock mr-2 text-paiecash"></i>
+                    Mot de passe <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="input-field"
+                    placeholder="Minimum 8 caractères"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Confirmer le mot de passe <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    className="input-field"
+                    placeholder="Répétez le mot de passe"
+                    required
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Confirmer le mot de passe <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className="input-field"
-                  placeholder="Répétez le mot de passe"
-                  required
-                />
-              </div>
-            </div>
+            )}
 
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">

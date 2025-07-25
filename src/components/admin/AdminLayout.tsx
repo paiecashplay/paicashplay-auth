@@ -14,6 +14,7 @@ const MENU_ITEMS = [
   { href: '/admin/clients', icon: 'fas fa-key', label: 'Clients OAuth', description: 'Applications tierces' },
   { href: '/admin/identity-providers', icon: 'fas fa-plug', label: 'Fournisseurs OAuth', description: 'Connexions sociales' },
   { href: '/admin/logs', icon: 'fas fa-clipboard-list', label: 'Logs', description: 'Historique système' },
+  { href: '/admin/profile', icon: 'fas fa-user-cog', label: 'Mon Profil', description: 'Profil administrateur' },
   { href: '/admin/settings', icon: 'fas fa-cog', label: 'Configuration', description: 'Paramètres système' }
 ];
 
@@ -87,7 +88,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
           {/* User Info & Logout */}
           <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center mb-4">
+            <a href="/admin/profile" className="flex items-center mb-4 hover:bg-gray-50 p-2 rounded-lg transition-colors">
               <div className="w-8 h-8 bg-paiecash/10 rounded-full flex items-center justify-center mr-3">
                 <i className="fas fa-user-shield text-paiecash text-sm"></i>
               </div>
@@ -95,7 +96,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <div className="text-sm font-medium text-gray-900">Administrateur</div>
                 <div className="text-xs text-gray-500">admin@paiecashplay.com</div>
               </div>
-            </div>
+            </a>
             <button
               onClick={handleLogout}
               className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"

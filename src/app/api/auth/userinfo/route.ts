@@ -1,67 +1,84 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/jwt';
-import db from '@/lib/database';
+import { verifyJWT } from '@/lib/jwt';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
-  const authorization = request.headers.get('authorization');
-  
-  if (!authorization || !authorization.startsWith('Bearer ')) {
-    return NextResponse.json({ 
-      error: 'invalid_token',
-      error_description: 'Missing or invalid authorization header'
-    }, { status: 401 });
-  }
-  
-  const token = authorization.substring(7);
-  
   try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Missing or invalid authorization header' }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    
     // Verify JWT token
-    const payload = await verifyToken(token);
-    
-    // Get user information from database
-    const [userRows] = await db.execute(`
-      SELECT u.id, u.email, u.user_type, u.is_verified, u.created_at,
-             p.first_name, p.last_name, p.phone, p.country, p.language, p.avatar_url
-      FROM users u 
-      LEFT JOIN user_profiles p ON u.id = p.user_id 
-      WHERE u.id = ? AND u.is_active = TRUE
-    `, [payload.sub]);
-    
-    const user = (userRows as any[])[0];
+    const payload = await verifyJWT(token);
+    if (!payload || !payload.sub) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    // Get user info
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      include: {
+        profile: true,
+        socialAccounts: {
+          include: {
+            provider: {
+              select: {
+                name: true,
+                displayName: true,
+                type: true
+              }
+            }
+          }
+        }
+      }
+    });
+
     if (!user) {
-      return NextResponse.json({ 
-        error: 'invalid_token',
-        error_description: 'User not found'
-      }, { status: 401 });
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-    
-    // Return user info based on requested scopes
-    const scopes = payload.scope?.split(' ') || [];
-    const userInfo: any = {
-      sub: user.id
+
+    // Return OpenID Connect standard claims
+    const userInfo = {
+      sub: user.id,
+      email: user.email,
+      email_verified: user.isVerified,
+      name: user.profile ? `${user.profile.firstName} ${user.profile.lastName}`.trim() : null,
+      given_name: user.profile?.firstName,
+      family_name: user.profile?.lastName,
+      phone_number: user.profile?.phone,
+      locale: user.profile?.language || 'fr',
+      picture: user.profile?.avatarUrl,
+      updated_at: Math.floor(new Date(user.updatedAt).getTime() / 1000),
+      
+      // Custom PaieCashPlay claims
+      user_type: user.userType,
+      is_active: user.isActive,
+      created_at: Math.floor(new Date(user.createdAt).getTime() / 1000),
+      
+      // Type-specific metadata
+      ...(user.profile?.metadata && { metadata: user.profile.metadata }),
+      
+      // Social accounts
+      social_accounts: user.socialAccounts.map(account => ({
+        provider: account.provider.name,
+        provider_type: account.provider.type,
+        linked_at: Math.floor(new Date(account.createdAt).getTime() / 1000)
+      }))
     };
-    
-    if (scopes.includes('profile')) {
-      userInfo.name = `${user.first_name || ''} ${user.last_name || ''}`.trim();
-      userInfo.given_name = user.first_name;
-      userInfo.family_name = user.last_name;
-      userInfo.phone_number = user.phone;
-      userInfo.locale = user.language;
-      userInfo.picture = user.avatar_url;
-      userInfo.user_type = user.user_type;
-    }
-    
-    if (scopes.includes('email')) {
-      userInfo.email = user.email;
-      userInfo.email_verified = user.is_verified;
-    }
-    
+
+    // Remove null/undefined values
+    Object.keys(userInfo).forEach(key => {
+      if (userInfo[key as keyof typeof userInfo] === null || userInfo[key as keyof typeof userInfo] === undefined) {
+        delete userInfo[key as keyof typeof userInfo];
+      }
+    });
+
     return NextResponse.json(userInfo);
-    
   } catch (error) {
-    return NextResponse.json({ 
-      error: 'invalid_token',
-      error_description: 'Token verification failed'
-    }, { status: 401 });
+    console.error('UserInfo error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

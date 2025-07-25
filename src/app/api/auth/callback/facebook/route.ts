@@ -1,0 +1,68 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { IdentityProviderService } from '@/lib/identity-providers';
+import { AuthService } from '@/lib/auth-service';
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    const error = searchParams.get('error');
+
+    if (error) {
+      return NextResponse.redirect(new URL(`/login?error=${error}`, request.url));
+    }
+
+    if (!code || !state) {
+      return NextResponse.redirect(new URL('/login?error=missing_params', request.url));
+    }
+
+    const provider = await IdentityProviderService.getProvider('facebook');
+    if (!provider) {
+      return NextResponse.redirect(new URL('/login?error=provider_not_found', request.url));
+    }
+
+    const tokens = await IdentityProviderService.exchangeCodeForToken(provider, code);
+    if (!tokens.access_token) {
+      return NextResponse.redirect(new URL('/login?error=token_exchange_failed', request.url));
+    }
+
+    const profile = await IdentityProviderService.getUserProfile(provider, tokens.access_token);
+    
+    let stateData;
+    try {
+      stateData = JSON.parse(atob(state));
+    } catch {
+      return NextResponse.redirect(new URL('/login?error=invalid_state', request.url));
+    }
+
+    const existingUser = await IdentityProviderService.findUserBySocialAccount(provider.id, profile.id);
+    
+    if (existingUser) {
+      const sessionToken = await AuthService.createSession(existingUser.id, request.headers.get('user-agent') || '', request.ip || '');
+      
+      const response = NextResponse.redirect(new URL('/dashboard', request.url));
+      response.cookies.set('session_token', sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60
+      });
+      
+      return response;
+    } else {
+      const signupData = {
+        provider: 'facebook',
+        profile,
+        tokens,
+        mode: stateData.mode
+      };
+      
+      const tempToken = btoa(JSON.stringify(signupData));
+      return NextResponse.redirect(new URL(`/signup?social=${tempToken}`, request.url));
+    }
+  } catch (error) {
+    console.error('Facebook callback error:', error);
+    return NextResponse.redirect(new URL('/login?error=callback_failed', request.url));
+  }
+}

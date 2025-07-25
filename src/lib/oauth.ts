@@ -37,19 +37,23 @@ export class OAuthService {
     clientId: string,
     userId: string,
     redirectUri: string,
-    scope: string
+    scope: string,
+    codeChallenge?: string,
+    codeChallengeMethod?: string
   ): Promise<string> {
     const code = generateAuthCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     
-    // Store in user session temporarily (you might want a separate table)
-    await prisma.userSession.create({
+    await prisma.authorizationCode.create({
       data: {
+        code,
+        clientId,
         userId,
-        sessionToken: code,
-        expiresAt,
-        ipAddress: 'oauth',
-        userAgent: `oauth_${clientId}`
+        redirectUri,
+        scope,
+        codeChallenge,
+        codeChallengeMethod,
+        expiresAt
       }
     });
     
@@ -59,42 +63,146 @@ export class OAuthService {
   static async exchangeCodeForTokens(
     code: string,
     clientId: string,
-    redirectUri: string
+    redirectUri: string,
+    codeVerifier?: string
   ): Promise<{ access_token: string; refresh_token: string; token_type: string; expires_in: number } | null> {
-    // Get and validate authorization code
-    const authCode = await prisma.userSession.findFirst({
+    const authCode = await prisma.authorizationCode.findFirst({
       where: {
-        sessionToken: code,
-        userAgent: `oauth_${clientId}`,
+        code,
+        clientId,
+        redirectUri,
+        used: false,
         expiresAt: { gt: new Date() }
       },
       include: {
-        user: {
-          include: { profile: true }
-        }
+        user: { include: { profile: true } }
       }
     });
     
     if (!authCode || !authCode.user) return null;
     
-    // Delete used code
-    await prisma.userSession.delete({ where: { id: authCode.id } });
+    // Validate PKCE if present
+    if (authCode.codeChallenge && authCode.codeChallengeMethod) {
+      if (!codeVerifier) return null;
+      
+      const challenge = authCode.codeChallengeMethod === 'S256' 
+        ? crypto.createHash('sha256').update(codeVerifier).digest('base64url')
+        : codeVerifier;
+        
+      if (challenge !== authCode.codeChallenge) return null;
+    }
     
-    // Generate tokens
+    // Mark code as used
+    await prisma.authorizationCode.update({
+      where: { id: authCode.id },
+      data: { used: true }
+    });
+    
     const tokenPayload = {
       sub: authCode.user.id,
       email: authCode.user.email,
       user_type: authCode.user.userType,
-      scope: 'openid profile email',
+      scope: authCode.scope || 'openid profile email',
       client_id: clientId
     };
     
     const accessToken = await signAccessToken(tokenPayload);
     const refreshToken = await signRefreshToken(tokenPayload);
     
+    // Store tokens in database
+    const accessTokenRecord = await prisma.accessToken.create({
+      data: {
+        tokenHash: crypto.createHash('sha256').update(accessToken).digest('hex'),
+        clientId,
+        userId: authCode.user.id,
+        scope: authCode.scope,
+        expiresAt: new Date(Date.now() + 3600 * 1000)
+      }
+    });
+    
+    await prisma.refreshToken.create({
+      data: {
+        tokenHash: crypto.createHash('sha256').update(refreshToken).digest('hex'),
+        accessTokenId: accessTokenRecord.id,
+        expiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000)
+      }
+    });
+    
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
+      token_type: 'Bearer',
+      expires_in: 3600
+    };
+  }
+
+  static async refreshAccessToken(refreshToken: string, clientId: string) {
+    const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    
+    const refreshTokenRecord = await prisma.refreshToken.findFirst({
+      where: {
+        tokenHash,
+        revoked: false,
+        expiresAt: { gt: new Date() }
+      },
+      include: {
+        accessToken: {
+          include: {
+            user: { include: { profile: true } }
+          }
+        }
+      }
+    });
+    
+    if (!refreshTokenRecord || refreshTokenRecord.accessToken.clientId !== clientId) {
+      return null;
+    }
+    
+    // Revoke old tokens
+    await prisma.$transaction([
+      prisma.accessToken.update({
+        where: { id: refreshTokenRecord.accessToken.id },
+        data: { revoked: true }
+      }),
+      prisma.refreshToken.update({
+        where: { id: refreshTokenRecord.id },
+        data: { revoked: true }
+      })
+    ]);
+    
+    // Generate new tokens
+    const tokenPayload = {
+      sub: refreshTokenRecord.accessToken.user.id,
+      email: refreshTokenRecord.accessToken.user.email,
+      user_type: refreshTokenRecord.accessToken.user.userType,
+      scope: refreshTokenRecord.accessToken.scope || 'openid profile email',
+      client_id: clientId
+    };
+    
+    const newAccessToken = await signAccessToken(tokenPayload);
+    const newRefreshToken = await signRefreshToken(tokenPayload);
+    
+    const newAccessTokenRecord = await prisma.accessToken.create({
+      data: {
+        tokenHash: crypto.createHash('sha256').update(newAccessToken).digest('hex'),
+        clientId,
+        userId: refreshTokenRecord.accessToken.user.id,
+        scope: refreshTokenRecord.accessToken.scope,
+        expiresAt: new Date(Date.now() + 3600 * 1000)
+      }
+    });
+    
+    await prisma.refreshToken.create({
+      data: {
+        tokenHash: crypto.createHash('sha256').update(newRefreshToken).digest('hex'),
+        accessTokenId: newAccessTokenRecord.id,
+        expiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000)
+      }
+    });
+    
+    return {
+      access_token: newAccessToken,
+      refresh_token: newRefreshToken,
       token_type: 'Bearer',
       expires_in: 3600
     };
@@ -107,5 +215,21 @@ export class OAuthService {
   static validateScope(client: OAuthClient, scope: string): boolean {
     const requestedScopes = scope.split(' ');
     return requestedScopes.every(s => client.allowed_scopes.includes(s));
+  }
+
+  static async revokeToken(token: string, tokenType: 'access_token' | 'refresh_token') {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    
+    if (tokenType === 'access_token') {
+      await prisma.accessToken.updateMany({
+        where: { tokenHash },
+        data: { revoked: true }
+      });
+    } else {
+      await prisma.refreshToken.updateMany({
+        where: { tokenHash },
+        data: { revoked: true }
+      });
+    }
   }
 }

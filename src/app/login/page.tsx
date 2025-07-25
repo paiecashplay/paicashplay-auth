@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Logo from '@/components/ui/Logo';
+import { useToast } from '@/components/ui/Toast';
+import SocialButtons from '@/components/ui/SocialButtons';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -10,6 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const toast = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,8 +29,10 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        router.push('/dashboard');
+        toast.success('Connexion réussie', 'Redirection vers votre tableau de bord...');
+        setTimeout(() => router.push('/dashboard'), 1000);
       } else {
+        toast.error('Erreur de connexion', data.error || 'Email ou mot de passe incorrect');
         setError(data.error || 'Erreur de connexion');
       }
     } catch (error) {
@@ -114,6 +119,8 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          <SocialButtons mode="login" />
 
           {/* Links */}
           <div className="mt-6 pt-6 border-t border-gray-200 text-center space-y-3">

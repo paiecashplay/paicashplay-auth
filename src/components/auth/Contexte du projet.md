@@ -154,3 +154,6 @@ Se connecter sur toutes les applications du écosystème PaieCashPlay
 Gérer son profil et ses préférences depuis un tableau de bord centralisé
 
 Question : Peux-tu implémenter ce système SSO personnalisé complet en respectant toutes ces spécifications 
+
+ super. maintenant je veux que tu analyse et complete ceci: 
+je veux que tu ajoute les boutons de reseaux social. principalement facebook, linkedIn et Google. il faut que l'on puisse configurer ses fournisseus d'identité dans le backend. et lorsqu'il sont configurer dans le backend, le bouton apparait dans le formulaire de connexion et de création de compte. pour le cas de la création de compte, lorsqu'on utilise un fournisseur d'identité, apres la récuperation de ses informations de profil, ses informations sont prérempli dans les champs et il est demandé de completer les champs manquand en fonction du profil choisi. et à ce moment, on sauvegarde ses informations dans le systeme. et apres il peut utiliser se fournisseur d'identer pour se connecter. integre complement cela dans le systeme de Web SSO

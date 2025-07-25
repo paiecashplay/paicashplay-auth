@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Logo from '@/components/ui/Logo';
+import { useToast } from '@/components/ui/Toast';
 
 export default function AdminLogin() {
   const [username, setUsername] = useState('');
@@ -10,6 +11,7 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const toast = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,11 +28,14 @@ export default function AdminLogin() {
       const data = await response.json();
 
       if (response.ok) {
-        router.push('/admin/dashboard');
+        toast.success('Connexion réussie', 'Redirection vers le dashboard...');
+        setTimeout(() => router.push('/admin/dashboard'), 1000);
       } else {
+        toast.error('Erreur de connexion', data.error || 'Identifiants incorrects');
         setError(data.error || 'Erreur de connexion');
       }
     } catch (error) {
+      toast.error('Erreur de connexion', 'Impossible de se connecter au serveur');
       setError('Erreur de connexion');
     } finally {
       setLoading(false);

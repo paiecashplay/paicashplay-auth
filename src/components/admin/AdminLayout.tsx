@@ -12,6 +12,7 @@ const MENU_ITEMS = [
   { href: '/admin/dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard', description: 'Vue d\'ensemble' },
   { href: '/admin/users', icon: 'fas fa-users', label: 'Utilisateurs', description: 'Gestion des comptes' },
   { href: '/admin/clients', icon: 'fas fa-key', label: 'Clients OAuth', description: 'Applications tierces' },
+  { href: '/admin/identity-providers', icon: 'fas fa-plug', label: 'Fournisseurs OAuth', description: 'Connexions sociales' },
   { href: '/admin/logs', icon: 'fas fa-clipboard-list', label: 'Logs', description: 'Historique système' },
   { href: '/admin/settings', icon: 'fas fa-cog', label: 'Configuration', description: 'Paramètres système' }
 ];

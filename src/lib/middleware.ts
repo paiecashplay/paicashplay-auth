@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from './auth-service';
 import { AdminAuthService } from './admin-auth';
 import { ensurePrismaReady } from './prisma';
+import { cookies } from 'next/headers';
 
 export function requireAuth(handler: (request: NextRequest, user: any) => Promise<NextResponse>) {
   return async (request: NextRequest) => {

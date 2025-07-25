@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { useToast } from '@/components/ui/Toast';
+import CopyButton from '@/components/ui/CopyButton';
 
 interface OAuthClient {
   id: string;
@@ -24,6 +26,7 @@ export default function AdminClients() {
     description: '',
     redirectUris: ['']
   });
+  const toast = useToast();
 
   useEffect(() => {
     fetchClients();
@@ -59,12 +62,18 @@ export default function AdminClients() {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        toast.success('Client créé avec succès', `Client ID: ${data.client.clientId}`);
         setShowCreateModal(false);
         setNewClient({ name: '', description: '', redirectUris: [''] });
         fetchClients();
+      } else {
+        const errorData = await response.json();
+        toast.error('Erreur lors de la création', errorData.error || 'Impossible de créer le client');
       }
     } catch (error) {
       console.error('Error creating client:', error);
+      toast.error('Erreur de connexion', 'Impossible de communiquer avec le serveur');
     }
   };
 
@@ -162,9 +171,7 @@ export default function AdminClients() {
                   <code className="flex-1 bg-gray-50 px-3 py-2 rounded text-sm font-mono text-gray-800 border">
                     {client.client_id}
                   </code>
-                  <button className="ml-2 text-gray-400 hover:text-gray-600">
-                    <i className="fas fa-copy"></i>
-                  </button>
+                  <CopyButton text={client.client_id} className="ml-2" />
                 </div>
               </div>
 
@@ -174,9 +181,7 @@ export default function AdminClients() {
                   <code className="flex-1 bg-gray-50 px-3 py-2 rounded text-sm font-mono text-gray-800 border">
                     {client.client_secret.substring(0, 20)}...
                   </code>
-                  <button className="ml-2 text-gray-400 hover:text-gray-600">
-                    <i className="fas fa-eye"></i>
-                  </button>
+                  <CopyButton text={client.client_secret} className="ml-2" />
                 </div>
               </div>
 

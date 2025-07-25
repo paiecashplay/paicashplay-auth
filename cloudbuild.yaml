@@ -1,0 +1,31 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '${_IMAGE}', '.']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_IMAGE}']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'deploy', '${_SERVICE}',
+      '--image', '${_IMAGE}',
+      '--region', '${_REGION}',
+      '--platform', 'managed',
+      '--allow-unauthenticated'
+    ]
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+serviceAccount: paicasplay-build-run@crypto-arcade-401717.iam.gserviceaccount.com
+
+
+# Substitutions pour personnaliser sans modifier le YAML
+substitutions:
+  _IMAGE: 'us-central1-docker.pkg.dev/crypto-arcade-401717/paiecashplay/auth:latest'
+  _SERVICE: 'paiecashplay-service'
+  _REGION: 'us-central1'
+
+# Timeout de 10 minutes
+timeout: 600s

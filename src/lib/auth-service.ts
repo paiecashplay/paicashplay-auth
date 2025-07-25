@@ -1,6 +1,8 @@
 import { hashPassword, verifyPassword, generateSecureToken } from './password';
 import { UserType } from '@/types/auth';
 import { prisma } from './prisma';
+import { RateLimitService } from './rate-limit';
+import { AuditService } from './audit';
 
 export interface CreateUserData {
   email: string;
@@ -18,7 +20,7 @@ export interface LoginData {
 }
 
 export class AuthService {
-  static async createUser(userData: CreateUserData) {
+  static async createUser(userData: CreateUserData, ipAddress?: string, userAgent?: string) {
     const { ensurePrismaReady } = await import('./prisma');
     await ensurePrismaReady();
     const { email, password, firstName, lastName, userType, phone, country } = userData;
@@ -62,13 +64,27 @@ export class AuthService {
       }
     });
     
+    await AuditService.logUserAction(user.id, 'user_created', 'user', user.id, { 
+      newValues: { email, userType, firstName, lastName }, ipAddress, userAgent 
+    });
+    
     return { userId: user.id, verificationToken };
   }
   
-  static async loginUser(loginData: LoginData) {
+  static async loginUser(loginData: LoginData, ipAddress?: string, userAgent?: string) {
     const { ensurePrismaReady } = await import('./prisma');
     await ensurePrismaReady();
     const { email, password } = loginData;
+    
+    // Check rate limit
+    const rateLimitKey = RateLimitService.generateKey(email, 'login');
+    const rateLimit = await RateLimitService.checkRateLimit(rateLimitKey, 'login');
+    if (!rateLimit.allowed) {
+      await AuditService.logUserAction('', 'login_rate_limited', 'auth', null, { 
+        newValues: { email }, ipAddress, userAgent 
+      });
+      throw new Error('Too many login attempts. Please try again later.');
+    }
     
     // Get user with profile
     const user = await prisma.user.findUnique({
@@ -77,18 +93,57 @@ export class AuthService {
     });
     
     if (!user) {
+      await AuditService.logUserAction('', 'login_failed', 'auth', null, { 
+        newValues: { email, reason: 'user_not_found' }, ipAddress, userAgent 
+      });
       throw new Error('Invalid credentials');
     }
     
+    // Check if account is locked
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      await AuditService.logUserAction(user.id, 'login_blocked', 'auth', null, { 
+        newValues: { reason: 'account_locked' }, ipAddress, userAgent 
+      });
+      throw new Error('Account is temporarily locked. Please try again later.');
+    }
+    
     if (!user.isActive) {
+      await AuditService.logUserAction(user.id, 'login_failed', 'auth', null, { 
+        newValues: { reason: 'account_deactivated' }, ipAddress, userAgent 
+      });
       throw new Error('Account is deactivated');
     }
     
     // Verify password
     const isValidPassword = await verifyPassword(password, user.passwordHash);
     if (!isValidPassword) {
+      // Increment login attempts
+      const newAttempts = user.loginAttempts + 1;
+      const shouldLock = newAttempts >= 5;
+      
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          loginAttempts: newAttempts,
+          lockedUntil: shouldLock ? new Date(Date.now() + 30 * 60 * 1000) : null // 30 min lock
+        }
+      });
+      
+      await AuditService.logUserAction(user.id, 'login_failed', 'auth', null, { 
+        newValues: { reason: 'invalid_password', attempts: newAttempts }, ipAddress, userAgent 
+      });
+      
       throw new Error('Invalid credentials');
     }
+    
+    // Reset login attempts on successful login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        loginAttempts: 0,
+        lockedUntil: null
+      }
+    });
     
     // Create session
     const sessionToken = generateSecureToken();
@@ -98,8 +153,14 @@ export class AuthService {
       data: {
         userId: user.id,
         sessionToken,
+        ipAddress,
+        userAgent,
         expiresAt
       }
+    });
+    
+    await AuditService.logUserAction(user.id, 'login_success', 'auth', null, { 
+      ipAddress, userAgent 
     });
     
     return {
@@ -171,7 +232,13 @@ export class AuthService {
     };
   }
   
-  static async logout(sessionToken: string) {
+  static async logout(sessionToken: string, ipAddress?: string, userAgent?: string) {
+    const session = await prisma.userSession.findFirst({ where: { sessionToken } });
+    if (session) {
+      await AuditService.logUserAction(session.userId, 'logout', 'auth', null, { 
+        ipAddress, userAgent 
+      });
+    }
     await prisma.userSession.deleteMany({ where: { sessionToken } });
   }
   

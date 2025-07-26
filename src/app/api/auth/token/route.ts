@@ -6,7 +6,6 @@ import { AuditService } from '@/lib/audit';
 function getClientIP(request: NextRequest): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0] || 
          request.headers.get('x-real-ip') || 
-         request.ip || 
          'unknown';
 }
 

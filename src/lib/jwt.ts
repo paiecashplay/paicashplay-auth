@@ -38,7 +38,11 @@ export async function signRefreshToken(payload: TokenPayload): Promise<string> {
 
 export async function verifyToken(token: string): Promise<TokenPayload> {
   const { payload } = await jwtVerify(token, secret);
-  return payload as TokenPayload;
+  return payload as unknown as TokenPayload;
+}
+
+export async function verifyJWT(token: string): Promise<TokenPayload> {
+  return await verifyToken(token);
 }
 
 export function generateAuthCode(): string {

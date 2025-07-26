@@ -11,8 +11,34 @@ export class EmailTemplateService {
       return fs.readFileSync(templatePath, 'utf-8');
     } catch (error) {
       console.error(`Error loading email template ${templateName}:`, error);
-      throw new Error(`Email template ${templateName} not found`);
+      // Return a basic template if file not found
+      return this.getBasicTemplate(templateName);
     }
+  }
+
+  private static getBasicTemplate(templateName: string): string {
+    const templates: Record<string, string> = {
+      verification: `
+        <h1>Vérification d'email</h1>
+        <p>Bonjour {{firstName}},</p>
+        <p>Cliquez sur le lien pour vérifier votre email :</p>
+        <a href="{{verificationUrl}}">Vérifier mon email</a>
+      `,
+      'password-reset': `
+        <h1>Réinitialisation de mot de passe</h1>
+        <p>Bonjour {{firstName}},</p>
+        <p>Cliquez sur le lien pour réinitialiser votre mot de passe :</p>
+        <a href="{{resetUrl}}">Réinitialiser</a>
+      `,
+      welcome: `
+        <h1>Bienvenue !</h1>
+        <p>Bonjour {{firstName}},</p>
+        <p>Bienvenue sur PaieCashPlay en tant que {{userType}}.</p>
+        <a href="{{dashboardUrl}}">Accéder au tableau de bord</a>
+      `
+    };
+    
+    return templates[templateName] || '<p>Template not found</p>';
   }
   
   static replaceVariables(template: string, variables: Record<string, string>): string {

@@ -13,11 +13,15 @@ export async function ensureDbInitialized() {
     await prisma.$connect();
     
     // Push schema (creates tables if not exist)
-    const { execSync } = require('child_process');
-    execSync('npx prisma db push --accept-data-loss', { 
-      stdio: 'pipe',
-      cwd: process.cwd()
-    });
+    try {
+      const { execSync } = require('child_process');
+      execSync('npx prisma db push --accept-data-loss', { 
+        stdio: 'pipe',
+        cwd: process.cwd()
+      });
+    } catch (error) {
+      console.warn('Schema push failed, continuing...', error);
+    }
     
     // Seed data if needed
     await seedDefaultData();

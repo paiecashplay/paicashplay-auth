@@ -6,7 +6,6 @@ import { cookies } from 'next/headers';
 function getClientIP(request: NextRequest): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0] || 
          request.headers.get('x-real-ip') || 
-         request.ip || 
          'unknown';
 }
 
@@ -52,7 +51,7 @@ export async function POST(request: NextRequest) {
     );
     
     // Set session cookie
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     cookieStore.set('session_token', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

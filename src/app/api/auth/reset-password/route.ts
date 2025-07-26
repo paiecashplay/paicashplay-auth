@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth-service';
 import { EmailService } from '@/lib/email-service';
-import { validatePassword } from '@/lib/auth';
-import db from '@/lib/database';
+import { prisma } from '@/lib/prisma';
 
 // Request password reset
 export async function POST(request: NextRequest) {
@@ -12,7 +11,7 @@ export async function POST(request: NextRequest) {
     
     // If token and newPassword provided, reset password
     if (token && newPassword) {
-      if (!validatePassword(newPassword)) {
+      if (newPassword.length < 8) {
         return NextResponse.json({ 
           error: 'Password must be at least 8 characters' 
         }, { status: 400 });
@@ -34,14 +33,19 @@ export async function POST(request: NextRequest) {
     }
     
     // Get user info for email
-    const [userRows] = await db.execute(`
-      SELECT u.id, u.email, p.first_name
-      FROM users u 
-      LEFT JOIN user_profiles p ON u.id = p.user_id 
-      WHERE u.email = ? AND u.is_active = TRUE
-    `, [email]);
-    
-    const user = (userRows as any[])[0];
+    const user = await prisma.user.findFirst({
+      where: { 
+        email: email.toLowerCase().trim(), 
+        isActive: true 
+      },
+      include: {
+        profile: {
+          select: {
+            firstName: true
+          }
+        }
+      }
+    });
     
     const { resetToken } = await AuthService.requestPasswordReset(email);
     
@@ -49,7 +53,7 @@ export async function POST(request: NextRequest) {
     if (user && resetToken) {
       await EmailService.sendPasswordResetEmail(
         user.email, 
-        user.first_name || 'Utilisateur', 
+        user.profile?.firstName || 'Utilisateur', 
         resetToken
       );
     }

@@ -80,7 +80,7 @@ export class AuthService {
     const rateLimitKey = RateLimitService.generateKey(email, 'login');
     const rateLimit = await RateLimitService.checkRateLimit(rateLimitKey, 'login');
     if (!rateLimit.allowed) {
-      await AuditService.logUserAction('', 'login_rate_limited', 'auth', null, { 
+      await AuditService.logUserAction('', 'login_rate_limited', 'auth', undefined, { 
         newValues: { email }, ipAddress, userAgent 
       });
       throw new Error('Too many login attempts. Please try again later.');
@@ -93,7 +93,7 @@ export class AuthService {
     });
     
     if (!user) {
-      await AuditService.logUserAction('', 'login_failed', 'auth', null, { 
+      await AuditService.logUserAction('', 'login_failed', 'auth', undefined, { 
         newValues: { email, reason: 'user_not_found' }, ipAddress, userAgent 
       });
       throw new Error('Invalid credentials');
@@ -101,14 +101,14 @@ export class AuthService {
     
     // Check if account is locked
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      await AuditService.logUserAction(user.id, 'login_blocked', 'auth', null, { 
+      await AuditService.logUserAction(user.id, 'login_blocked', 'auth', undefined, { 
         newValues: { reason: 'account_locked' }, ipAddress, userAgent 
       });
       throw new Error('Account is temporarily locked. Please try again later.');
     }
     
     if (!user.isActive) {
-      await AuditService.logUserAction(user.id, 'login_failed', 'auth', null, { 
+      await AuditService.logUserAction(user.id, 'login_failed', 'auth', undefined, { 
         newValues: { reason: 'account_deactivated' }, ipAddress, userAgent 
       });
       throw new Error('Account is deactivated');
@@ -129,7 +129,7 @@ export class AuthService {
         }
       });
       
-      await AuditService.logUserAction(user.id, 'login_failed', 'auth', null, { 
+      await AuditService.logUserAction(user.id, 'login_failed', 'auth', undefined, { 
         newValues: { reason: 'invalid_password', attempts: newAttempts }, ipAddress, userAgent 
       });
       
@@ -159,7 +159,7 @@ export class AuthService {
       }
     });
     
-    await AuditService.logUserAction(user.id, 'login_success', 'auth', null, { 
+    await AuditService.logUserAction(user.id, 'login_success', 'auth', undefined, { 
       ipAddress, userAgent 
     });
     
@@ -212,13 +212,12 @@ export class AuthService {
       },
       include: {
         user: {
-          where: { isActive: true },
           include: { profile: true }
         }
       }
     });
     
-    if (!session || !session.user) {
+    if (!session || !session.user || !session.user.isActive) {
       return null;
     }
     
@@ -235,7 +234,7 @@ export class AuthService {
   static async logout(sessionToken: string, ipAddress?: string, userAgent?: string) {
     const session = await prisma.userSession.findFirst({ where: { sessionToken } });
     if (session) {
-      await AuditService.logUserAction(session.userId, 'logout', 'auth', null, { 
+      await AuditService.logUserAction(session.userId, 'logout', 'auth', undefined, { 
         ipAddress, userAgent 
       });
     }
@@ -298,5 +297,29 @@ export class AuthService {
     ]);
     
     return true;
+  }
+
+  static async createSession(userId: string, userAgent?: string, ipAddress?: string) {
+    const sessionToken = generateSecureToken();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    
+    await prisma.userSession.create({
+      data: {
+        userId,
+        sessionToken,
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
+        expiresAt
+      }
+    });
+    
+    return sessionToken;
+  }
+
+  static async findUserByEmail(email: string) {
+    return await prisma.user.findUnique({
+      where: { email },
+      include: { profile: true }
+    });
   }
 }

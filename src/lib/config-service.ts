@@ -56,7 +56,7 @@ export class ConfigService {
       configKey: config.configKey,
       configValue: config.isEncrypted ? '***encrypted***' : (config.configValue || ''),
       configType: config.configType,
-      description: config.description,
+      description: config.description || undefined,
       isEncrypted: config.isEncrypted
     }));
   }
@@ -107,15 +107,20 @@ export class ConfigService {
   }
   
   private static encrypt(text: string): string {
-    const cipher = crypto.createCipher('aes-256-cbc', this.encryptionKey);
+    const key = crypto.scryptSync(this.encryptionKey, 'salt', 32);
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    return encrypted;
+    return iv.toString('hex') + ':' + encrypted;
   }
   
   private static decrypt(encryptedText: string): string {
-    const decipher = crypto.createDecipher('aes-256-cbc', this.encryptionKey);
-    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    const [ivHex, encrypted] = encryptedText.split(':');
+    const key = crypto.scryptSync(this.encryptionKey, 'salt', 32);
+    const iv = Buffer.from(ivHex, 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
   }

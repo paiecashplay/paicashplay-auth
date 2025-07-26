@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
     const existingUser = await IdentityProviderService.findUserBySocialAccount(provider.id, profile.id);
     
     if (existingUser) {
-      const sessionToken = await AuthService.createSession(existingUser.id, request.headers.get('user-agent') || '', request.ip || '');
+      const clientIP = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || 'unknown';
+      const sessionToken = await AuthService.createSession(existingUser.id, request.headers.get('user-agent') || '', clientIP);
       
       const response = NextResponse.redirect(new URL('/dashboard', request.url));
       response.cookies.set('session_token', sessionToken, {

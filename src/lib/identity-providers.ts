@@ -166,11 +166,11 @@ export class IdentityProviderService {
     });
 
     const accountData = {
-      email: profile.email,
-      name: profile.name,
-      avatar: profile.avatar,
-      accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token,
+      email: profile.email || null,
+      name: profile.name || null,
+      avatar: profile.avatar || null,
+      accessToken: tokens.access_token || null,
+      refreshToken: tokens.refresh_token || null,
       expiresAt: tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null
     };
 

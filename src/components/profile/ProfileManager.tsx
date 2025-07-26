@@ -7,6 +7,14 @@ import CountrySelect from '@/components/ui/CountrySelect';
 import PhoneInput from '@/components/ui/PhoneInput';
 import { useToast } from '@/components/ui/Toast';
 
+interface UserMetadata {
+  dateOfBirth?: string;
+  position?: string;
+  clubName?: string;
+  federationName?: string;
+  [key: string]: any;
+}
+
 interface User {
   id: string;
   email: string;
@@ -18,7 +26,7 @@ interface User {
     lastName: string;
     phone?: string;
     country?: string;
-    metadata?: any;
+    metadata?: UserMetadata;
   };
   socialAccounts?: Array<{
     provider: string;
@@ -38,7 +46,7 @@ export default function ProfileManager() {
     lastName: '',
     phone: '',
     country: '',
-    metadata: {}
+    metadata: {} as UserMetadata
   });
   const router = useRouter();
   const toast = useToast();

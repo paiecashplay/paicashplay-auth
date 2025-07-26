@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   }
   
   // Check if user is authenticated
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const sessionToken = cookieStore.get('session_token')?.value;
   
   if (!sessionToken) {

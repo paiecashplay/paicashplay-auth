@@ -82,7 +82,7 @@ export class AdminAuthService {
       email: admin.email,
       fullName: admin.fullName,
       isActive: admin.isActive,
-      lastLogin: admin.lastLogin
+      lastLogin: admin.lastLogin || undefined
     };
   }
   

@@ -154,4 +154,59 @@ export class AdminService {
       }))
     };
   }
+
+  static async getSessionStats() {
+    const [activeSessions, totalSessions, recentSessions] = await Promise.all([
+      prisma.userSession.count({ where: { expiresAt: { gt: new Date() } } }),
+      prisma.userSession.count(),
+      prisma.userSession.count({
+        where: {
+          createdAt: {
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+          }
+        }
+      })
+    ]);
+
+    return {
+      activeSessions,
+      totalSessions,
+      recentSessions
+    };
+  }
+
+  static async getRecentActivity() {
+    const recentUsers = await prisma.user.findMany({
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: { profile: true }
+    });
+
+    const recentSessions = await prisma.userSession.findMany({
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          include: { profile: true }
+        }
+      }
+    });
+
+    return {
+      recentUsers: recentUsers.map(user => ({
+        id: user.id,
+        email: user.email,
+        userType: user.userType,
+        name: user.profile ? `${user.profile.firstName} ${user.profile.lastName}` : null,
+        createdAt: user.createdAt
+      })),
+      recentSessions: recentSessions.map(session => ({
+        id: session.id,
+        userEmail: session.user.email,
+        userName: session.user.profile ? `${session.user.profile.firstName} ${session.user.profile.lastName}` : null,
+        ipAddress: session.ipAddress,
+        createdAt: session.createdAt
+      }))
+    };
+  }
 }

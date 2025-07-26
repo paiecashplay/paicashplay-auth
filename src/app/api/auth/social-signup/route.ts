@@ -34,23 +34,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Create user account
-    const user = await AuthService.createUser({
+    const createResult = await AuthService.createUser({
       email: profile.email,
-      password: null, // No password for social accounts
+      password: '', // Empty password for social accounts
       userType,
       firstName,
       lastName,
       phone: phone || null,
       country: country || null,
-      isVerified: true, // Social accounts are pre-verified
       ...additionalData
     });
+
+    // Get the created user with full data
+    const createdUser = await AuthService.findUserByEmail(profile.email);
+    if (!createdUser) {
+      throw new Error('Failed to retrieve created user');
+    }
 
     // Link social account
     const providerRecord = await IdentityProviderService.getProvider(provider);
     if (providerRecord) {
       await IdentityProviderService.linkSocialAccount(
-        user.id,
+        createResult.userId,
         providerRecord.id,
         profile,
         tokens
@@ -58,19 +63,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Create session
+    const clientIP = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || 'unknown';
     const sessionToken = await AuthService.createSession(
-      user.id,
+      createResult.userId,
       request.headers.get('user-agent') || '',
-      request.ip || ''
+      clientIP
     );
 
     const response = NextResponse.json({
       success: true,
       user: {
-        id: user.id,
-        email: user.email,
-        userType: user.userType,
-        profile: user.profile
+        id: createdUser.id,
+        email: createdUser.email,
+        userType: createdUser.userType,
+        profile: createdUser.profile
       }
     });
 

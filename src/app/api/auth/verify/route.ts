@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth-service';
 import { EmailService } from '@/lib/email-service';
-import db from '@/lib/database';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,16 +15,28 @@ export async function POST(request: NextRequest) {
     }
     
     // Get user info before verification
-    const [tokenRows] = await db.execute(`
-      SELECT ev.user_id, u.email, p.first_name, u.user_type
-      FROM email_verifications ev
-      JOIN users u ON ev.user_id = u.id
-      LEFT JOIN user_profiles p ON u.id = p.user_id
-      WHERE ev.token = ? AND ev.used = FALSE AND ev.expires_at > NOW()
-    `, [token]);
+    const verification = await prisma.emailVerification.findFirst({
+      where: {
+        token,
+        used: false,
+        expiresAt: {
+          gt: new Date()
+        }
+      },
+      include: {
+        user: {
+          include: {
+            profile: {
+              select: {
+                firstName: true
+              }
+            }
+          }
+        }
+      }
+    });
     
-    const tokenData = (tokenRows as any[])[0];
-    if (!tokenData) {
+    if (!verification) {
       return NextResponse.json({ 
         error: 'Invalid or expired verification token' 
       }, { status: 400 });
@@ -35,9 +47,9 @@ export async function POST(request: NextRequest) {
     
     // Send welcome email
     await EmailService.sendWelcomeEmail(
-      tokenData.email, 
-      tokenData.first_name, 
-      tokenData.user_type
+      verification.user.email, 
+      verification.user.profile?.firstName || 'Utilisateur', 
+      verification.user.userType
     );
     
     return NextResponse.json({

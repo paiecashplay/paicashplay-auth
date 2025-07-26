@@ -28,13 +28,13 @@ steps:
       - '--memory'
       - '1Gi'
       - '--timeout'
-      - '300'
+      - '600'
       - '--max-instances'
       - '10'
 
 substitutions:
-  _CLOUD_SQL_CONNECTION_NAME: 'your-project-id:region:instance-name'
-  _DB_USER: 'your-db-user'
+  _CLOUD_SQL_CONNECTION_NAME: 'CLOUD_SQL_CONNECTION_NAME=crypto-arcade-401717:us-central1:paicashplay-bd'
+  _DB_USER: 'donation'
   _DB_PASSWORD: 'your-db-password'
   _DB_NAME: 'paiecashplay_auth'
   _JWT_SECRET: 'your-super-secret-jwt-key-production'
@@ -43,3 +43,8 @@ substitutions:
 
 options:
   logging: CLOUD_LOGGING_ONLY
+
+serviceAccount: paicasplay-build-run@crypto-arcade-401717.iam.gserviceaccount.com
+
+# Timeout de 10 minutes
+timeout: 600s

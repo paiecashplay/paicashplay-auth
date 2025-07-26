@@ -44,5 +44,8 @@ ENV PORT=8080
 
 EXPOSE 8080
 
-# Commande de démarrage : migration + next start
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npx next start -p $PORT"]
+# Script de démarrage pour Cloud SQL
+COPY start.sh ./
+RUN chmod +x start.sh
+
+CMD ["./start.sh"]

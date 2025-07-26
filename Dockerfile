@@ -44,8 +44,9 @@ ENV PORT=8080
 
 EXPOSE 8080
 
-# Script de démarrage pour Cloud SQL
+# Scripts de démarrage et seed
 COPY start.sh ./
+COPY seed-production.js ./
 RUN chmod +x start.sh
 
 CMD ["./start.sh"]

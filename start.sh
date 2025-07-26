@@ -36,7 +36,11 @@ while ! npx prisma db push --accept-data-loss 2>/dev/null; do
   sleep 3
 done
 
-echo "✅ Database ready"
+echo "✅ Database schema ready"
+
+# Initialiser les données par défaut
+echo "🌱 Initializing default data..."
+node seed-production.js || echo "⚠️ Seed completed with warnings"
 
 # Démarrer l'application
 echo "🌐 Starting Next.js server on port $PORT..."

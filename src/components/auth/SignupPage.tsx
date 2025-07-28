@@ -3,11 +3,14 @@
 import { useState } from 'react';
 import { UserType } from '@/types/auth';
 import { getUserTypeLabel } from '@/lib/auth';
+import PhoneInput from '@/components/ui/PhoneInput';
+import DatePicker from '@/components/ui/DatePicker';
 
 const personas = [
   { id: 'player' as UserType, icon: 'fas fa-user', label: 'Licencié', desc: 'Joueur individuel', color: 'text-emerald-500' },
   { id: 'club' as UserType, icon: 'fas fa-users', label: 'Club', desc: 'Équipe sportive', color: 'text-emerald-500' },
   { id: 'federation' as UserType, icon: 'fas fa-building', label: 'Fédération', desc: 'Organisation', color: 'text-emerald-500' },
+  { id: 'company' as UserType, icon: 'fas fa-briefcase', label: 'Société', desc: 'Entreprise', color: 'text-blue-500' },
   { id: 'donor' as UserType, icon: 'fas fa-heart', label: 'Donateur', desc: 'Sponsor individuel', color: 'text-red-500' }
 ];
 
@@ -18,6 +21,8 @@ export default function SignupPage() {
     firstName: '',
     lastName: '',
     email: '',
+    phone: '',
+    dateOfBirth: '',
     password: '',
     // Player specific
     clubName: '',
@@ -26,15 +31,70 @@ export default function SignupPage() {
     organizationName: '',
     federationName: '',
     // Donor specific
-    company: ''
+    company: '',
+    // Company specific
+    companyName: '',
+    siret: '',
+    isPartner: false
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // TODO: Implement signup logic
-    setTimeout(() => setLoading(false), 2000);
+    
+    try {
+      const metadata: any = {};
+      
+      // Add specific metadata based on user type
+      if (selectedPersona === 'player') {
+        metadata.clubName = formData.clubName;
+        metadata.licenseNumber = formData.licenseNumber;
+      } else if (selectedPersona === 'club') {
+        metadata.organizationName = formData.organizationName;
+        metadata.federationName = formData.federationName;
+      } else if (selectedPersona === 'federation') {
+        metadata.organizationName = formData.organizationName;
+      } else if (selectedPersona === 'company') {
+        metadata.companyName = formData.companyName;
+        metadata.siret = formData.siret;
+      } else if (selectedPersona === 'donor') {
+        metadata.company = formData.company;
+      }
+      
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          userType: selectedPersona,
+          phone: formData.phone,
+          country: 'FR', // Default to France
+          isPartner: selectedPersona === 'company' ? formData.isPartner : false,
+          metadata
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Success - redirect to verification page or show success message
+        window.location.href = '/verify-email?email=' + encodeURIComponent(formData.email);
+      } else {
+        alert(data.error || 'Une erreur est survenue lors de la création du compte');
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      alert('Une erreur est survenue lors de la création du compte');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderForm = () => {
@@ -87,34 +147,66 @@ export default function SignupPage() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Téléphone (optionnel)</label>
+            <PhoneInput
+              value={formData.phone}
+              onChange={(phone) => setFormData({...formData, phone})}
+              placeholder="Numéro de téléphone"
+              className="w-full"
+            />
+          </div>
+          <div>
+            <DatePicker
+              value={formData.dateOfBirth}
+              onChange={(date) => setFormData({...formData, dateOfBirth: date})}
+              label="Date de naissance (optionnel)"
+              placeholder="Sélectionner votre date de naissance"
+              className="w-full"
+            />
+          </div>
+        </div>
+
         {/* Specific fields based on persona */}
         {selectedPersona === 'player' && (
           <>
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Club (optionnel)</label>
-              <div className="relative">
-                <i className="fas fa-users absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-500"></i>
-                <input
-                  type="text"
-                  value={formData.clubName}
-                  onChange={(e) => setFormData({...formData, clubName: e.target.value})}
-                  className="w-full pl-12 pr-4 py-3 bg-white border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all duration-200 text-gray-900 placeholder-gray-400"
-                  placeholder="Nom de votre club"
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Club (optionnel)</label>
+                <div className="relative">
+                  <i className="fas fa-users absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-500"></i>
+                  <input
+                    type="text"
+                    value={formData.clubName}
+                    onChange={(e) => setFormData({...formData, clubName: e.target.value})}
+                    className="w-full pl-12 pr-4 py-3 bg-white border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all duration-200 text-gray-900 placeholder-gray-400"
+                    placeholder="Nom de votre club"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Numéro de licence (optionnel)</label>
+                <div className="relative">
+                  <i className="fas fa-id-card absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-500"></i>
+                  <input
+                    type="text"
+                    value={formData.licenseNumber}
+                    onChange={(e) => setFormData({...formData, licenseNumber: e.target.value})}
+                    className="w-full pl-12 pr-4 py-3 bg-white border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all duration-200 text-gray-900 placeholder-gray-400"
+                    placeholder="Votre numéro de licence"
+                  />
+                </div>
               </div>
             </div>
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Numéro de licence (optionnel)</label>
-              <div className="relative">
-                <i className="fas fa-id-card absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-500"></i>
-                <input
-                  type="text"
-                  value={formData.licenseNumber}
-                  onChange={(e) => setFormData({...formData, licenseNumber: e.target.value})}
-                  className="w-full pl-12 pr-4 py-3 bg-white border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all duration-200 text-gray-900 placeholder-gray-400"
-                  placeholder="Votre numéro de licence"
-                />
-              </div>
+              <DatePicker
+                value={formData.dateOfBirth}
+                onChange={(date) => setFormData({...formData, dateOfBirth: date})}
+                label="Date de naissance (optionnel)"
+                placeholder="Sélectionner votre date de naissance"
+                className="w-full"
+              />
             </div>
           </>
         )}
@@ -168,6 +260,52 @@ export default function SignupPage() {
           </div>
         )}
 
+        {selectedPersona === 'company' && (
+          <>
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Nom de la société</label>
+              <div className="relative">
+                <i className="fas fa-briefcase absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-500"></i>
+                <input
+                  type="text"
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({...formData, companyName: e.target.value})}
+                  className="w-full pl-12 pr-4 py-3 bg-white border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all duration-200 text-gray-900 placeholder-gray-400"
+                  placeholder="Nom officiel de la société"
+                  required
+                />
+              </div>
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">SIRET (optionnel)</label>
+              <div className="relative">
+                <i className="fas fa-id-card absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-500"></i>
+                <input
+                  type="text"
+                  value={formData.siret}
+                  onChange={(e) => setFormData({...formData, siret: e.target.value})}
+                  className="w-full pl-12 pr-4 py-3 bg-white border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all duration-200 text-gray-900 placeholder-gray-400"
+                  placeholder="Numéro SIRET"
+                />
+              </div>
+            </div>
+            <div className="mb-6">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isPartner}
+                  onChange={(e) => setFormData({...formData, isPartner: e.target.checked})}
+                  className="w-5 h-5 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500 focus:ring-2"
+                />
+                <span className="text-sm font-semibold text-gray-700">
+                  Cette société est partenaire de PaieCashPlay
+                </span>
+              </label>
+              <p className="text-xs text-gray-600 mt-2 ml-8">Cochez cette case si votre société a un partenariat officiel avec PaieCashPlay</p>
+            </div>
+          </>
+        )}
+
         {selectedPersona === 'donor' && (
           <div className="mb-6">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Entreprise (optionnel)</label>
@@ -189,13 +327,20 @@ export default function SignupPage() {
           <div className="relative">
             <i className="fas fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-500"></i>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={(e) => setFormData({...formData, password: e.target.value})}
-              className="w-full pl-12 pr-4 py-3 bg-white border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all duration-200 text-gray-900 placeholder-gray-400"
+              className="w-full pl-12 pr-12 py-3 bg-white border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all duration-200 text-gray-900 placeholder-gray-400"
               placeholder="••••••••"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+            </button>
           </div>
           <p className="text-xs text-gray-600 mt-2 font-medium">8 caractères minimum, avec chiffres et lettres</p>
         </div>
@@ -278,22 +423,27 @@ export default function SignupPage() {
           /* Step 1: Persona Selection */
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-emerald-100 p-8 mb-8">
             <h3 className="text-2xl font-bold text-gray-800 mb-8 text-center">Sélectionnez votre profil</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
               {personas.map((persona) => (
                 <button
                   key={persona.id}
                   onClick={() => setSelectedPersona(persona.id)}
-                  className={`p-6 rounded-2xl border-2 text-center transition-all duration-200 hover:scale-105 ${
+                  className={`relative p-8 rounded-2xl border-2 text-center transition-all duration-200 hover:scale-105 ${
                     selectedPersona === persona.id 
                       ? 'border-emerald-500 bg-emerald-50 shadow-lg' 
                       : 'border-gray-200 hover:border-emerald-300 bg-white hover:shadow-md'
                   }`}
                 >
-                  <i className={`${persona.icon} text-3xl ${selectedPersona === persona.id ? 'text-emerald-600' : persona.color} mb-3`}></i>
-                  <div className="text-sm font-semibold text-gray-800">{persona.label}</div>
-                  <div className="text-xs text-gray-600 mt-1">{persona.desc}</div>
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center shadow-sm">
+                    <i className={`${persona.icon} text-2xl ${selectedPersona === persona.id ? 'text-emerald-600' : persona.color}`}></i>
+                  </div>
+                  <div className="text-base font-bold text-gray-800 mb-2">{persona.label}</div>
+                  <div className="text-sm text-gray-600 leading-tight">{persona.desc}</div>
+                  {selectedPersona === persona.id && (
+                    <i className="fas fa-check-circle text-emerald-500 absolute top-3 right-3 text-lg"></i>
+                  )}
                 </button>
-              ))}
+              ))
             </div>
             <button
               onClick={() => setStep(2)}

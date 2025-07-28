@@ -12,6 +12,8 @@ export interface CreateUserData {
   userType: UserType;
   phone?: string;
   country?: string;
+  isPartner?: boolean;
+  metadata?: any;
 }
 
 export interface LoginData {
@@ -23,7 +25,7 @@ export class AuthService {
   static async createUser(userData: CreateUserData, ipAddress?: string, userAgent?: string) {
     const { ensurePrismaReady } = await import('./prisma');
     await ensurePrismaReady();
-    const { email, password, firstName, lastName, userType, phone, country } = userData;
+    const { email, password, firstName, lastName, userType, phone, country, isPartner, metadata } = userData;
     
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -45,7 +47,9 @@ export class AuthService {
             firstName,
             lastName,
             phone: phone || null,
-            country: country || null
+            country: country || null,
+            isPartner: isPartner || false,
+            metadata: metadata || null
           }
         }
       },

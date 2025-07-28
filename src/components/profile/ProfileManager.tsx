@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Logo from '@/components/ui/Logo';
 import CountrySelect from '@/components/ui/CountrySelect';
 import PhoneInput from '@/components/ui/PhoneInput';
+import DatePicker from '@/components/ui/DatePicker';
 import { useToast } from '@/components/ui/Toast';
 
 interface UserMetadata {
@@ -138,19 +139,29 @@ export default function ProfileManager() {
         return (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date de naissance
-              </label>
-              <input
-                type="date"
-                value={formData.metadata?.dateOfBirth || ''}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  metadata: { ...formData.metadata, dateOfBirth: e.target.value }
-                })}
-                disabled={!editing}
-                className={`input-field ${!editing ? 'bg-gray-50' : ''}`}
-              />
+              {editing ? (
+                <DatePicker
+                  value={formData.metadata?.dateOfBirth || ''}
+                  onChange={(date) => setFormData({ 
+                    ...formData, 
+                    metadata: { ...formData.metadata, dateOfBirth: date }
+                  })}
+                  label="Date de naissance"
+                  placeholder="Sélectionner votre date de naissance"
+                />
+              ) : (
+                <>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date de naissance
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.metadata?.dateOfBirth ? new Date(formData.metadata.dateOfBirth).toLocaleDateString('fr-FR') : 'Non renseigné'}
+                    disabled
+                    className="input-field bg-gray-50"
+                  />
+                </>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

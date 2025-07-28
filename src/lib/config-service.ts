@@ -18,10 +18,15 @@ export class ConfigService {
       where: { configKey: key }
     });
     
-    if (!config) return null;
+    if (!config || !config.configValue) return null;
     
-    if (config.isEncrypted && config.configValue) {
-      return this.decrypt(config.configValue);
+    if (config.isEncrypted) {
+      try {
+        return this.decrypt(config.configValue);
+      } catch (error) {
+        console.error(`Failed to decrypt config ${key}:`, error);
+        return null;
+      }
     }
     
     return config.configValue;
@@ -116,7 +121,20 @@ export class ConfigService {
   }
   
   private static decrypt(encryptedText: string): string {
-    const [ivHex, encrypted] = encryptedText.split(':');
+    if (!encryptedText || typeof encryptedText !== 'string') {
+      throw new Error('Invalid encrypted text');
+    }
+    
+    const parts = encryptedText.split(':');
+    if (parts.length !== 2) {
+      throw new Error('Invalid encrypted text format');
+    }
+    
+    const [ivHex, encrypted] = parts;
+    if (!ivHex || !encrypted) {
+      throw new Error('Missing IV or encrypted data');
+    }
+    
     const key = crypto.scryptSync(this.encryptionKey, 'salt', 32);
     const iv = Buffer.from(ivHex, 'hex');
     const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);

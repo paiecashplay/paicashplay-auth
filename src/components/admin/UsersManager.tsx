@@ -103,9 +103,10 @@ export default function UsersManager() {
   const getUserTypeLabel = (type: string) => {
     const labels = {
       donor: 'Donateur',
-      player: 'Joueur',
+      player: 'Licencié',
       club: 'Club',
-      federation: 'Fédération'
+      federation: 'Fédération',
+      company: 'Société'
     };
     return labels[type as keyof typeof labels] || type;
   };
@@ -115,7 +116,8 @@ export default function UsersManager() {
       donor: 'bg-blue-100 text-blue-800',
       player: 'bg-green-100 text-green-800',
       club: 'bg-purple-100 text-purple-800',
-      federation: 'bg-orange-100 text-orange-800'
+      federation: 'bg-orange-100 text-orange-800',
+      company: 'bg-indigo-100 text-indigo-800'
     };
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
@@ -141,8 +143,9 @@ export default function UsersManager() {
             >
               <option value="">Tous les types</option>
               <option value="donor">Donateur</option>
-              <option value="player">Joueur</option>
+              <option value="player">Licencié</option>
               <option value="club">Club</option>
+              <option value="company">Société</option>
               <option value="federation">Fédération</option>
             </select>
           </div>

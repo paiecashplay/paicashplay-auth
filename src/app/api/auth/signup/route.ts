@@ -6,7 +6,7 @@ import { validateEmail, validatePassword } from '@/lib/auth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, firstName, lastName, userType, phone, country } = body;
+    const { email, password, firstName, lastName, userType, phone, country, isPartner, metadata } = body;
     
     // Validation
     if (!email || !password || !firstName || !lastName || !userType) {
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    if (!['donor', 'federation', 'club', 'player'].includes(userType)) {
+    if (!['donor', 'federation', 'club', 'player', 'company'].includes(userType)) {
       return NextResponse.json({ 
         error: 'Invalid user type' 
       }, { status: 400 });
@@ -41,7 +41,9 @@ export async function POST(request: NextRequest) {
       lastName,
       userType,
       phone,
-      country
+      country,
+      isPartner: isPartner || false,
+      metadata
     });
     
     // Send verification email

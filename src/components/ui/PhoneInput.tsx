@@ -94,31 +94,32 @@ export default function PhoneInput({ value, onChange, placeholder = "Numéro de 
   };
 
   return (
-    <div className={`relative ${className}`} style={{ zIndex: isOpen ? 70 : 'auto' }}>
-      <div className="flex">
+    <div className={`relative w-full ${className}`} style={{ zIndex: isOpen ? 70 : 'auto' }}>
+      <div className="flex w-full">
         {/* Country Code Selector */}
-        <div className="relative" ref={dropdownRef} style={{ zIndex: isOpen ? 70 : 'auto' }}>
+        <div className="relative flex-shrink-0" ref={dropdownRef} style={{ zIndex: isOpen ? 70 : 'auto' }}>
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="flex items-center px-3 py-3 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-paiecash focus:border-transparent transition-colors"
+            className="flex items-center px-2 sm:px-3 py-3 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-paiecash focus:border-transparent transition-colors min-w-0"
           >
-            <span className="text-lg mr-2">{selectedCountry.flag}</span>
-            <span className="text-sm font-medium">{selectedCountry.dialCode}</span>
-            <i className={`fas fa-chevron-down ml-2 text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`}></i>
+            <span className="text-base sm:text-lg mr-1 sm:mr-2">{selectedCountry.flag}</span>
+            <span className="text-xs sm:text-sm font-medium hidden xs:inline">{selectedCountry.dialCode}</span>
+            <span className="text-xs sm:text-sm font-medium xs:hidden">{selectedCountry.dialCode.replace('+', '')}</span>
+            <i className={`fas fa-chevron-down ml-1 sm:ml-2 text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`}></i>
           </button>
 
           {isOpen && (
-            <div className="absolute z-[70] left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-xl w-80 max-h-60 overflow-hidden">
-              <div className="p-3 border-b border-gray-200">
+            <div className="absolute z-[70] left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-xl min-w-full w-80 max-h-60 overflow-hidden">
+              <div className="p-2 sm:p-3 border-b border-gray-200">
                 <div className="relative">
-                  <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                  <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
                   <input
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Rechercher un pays..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-paiecash focus:border-transparent"
+                    placeholder="Rechercher..."
+                    className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-paiecash focus:border-transparent"
                   />
                 </div>
               </div>
@@ -128,17 +129,17 @@ export default function PhoneInput({ value, onChange, placeholder = "Numéro de 
                     key={country.code}
                     type="button"
                     onClick={() => handleCountrySelect(country)}
-                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center transition-colors"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-left hover:bg-gray-50 flex items-center transition-colors"
                   >
-                    <span className="text-lg mr-3">{country.flag}</span>
-                    <div className="flex-1">
-                      <div className="font-medium">{country.name}</div>
-                      <div className="text-sm text-gray-500">{country.dialCode}</div>
+                    <span className="text-base sm:text-lg mr-2 sm:mr-3">{country.flag}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm sm:text-base truncate">{country.name}</div>
+                      <div className="text-xs sm:text-sm text-gray-500">{country.dialCode}</div>
                     </div>
                   </button>
                 ))}
                 {filteredCountries.length === 0 && (
-                  <div className="px-4 py-3 text-gray-500 text-center">
+                  <div className="px-3 py-2 sm:px-4 sm:py-3 text-gray-500 text-center text-sm">
                     Aucun pays trouvé
                   </div>
                 )}
@@ -154,7 +155,7 @@ export default function PhoneInput({ value, onChange, placeholder = "Numéro de 
           onChange={(e) => handlePhoneChange(e.target.value)}
           placeholder={placeholder}
           required={required}
-          className="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-paiecash focus:border-transparent transition-all duration-200 bg-white"
+          className="flex-1 min-w-0 px-3 sm:px-4 py-3 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-paiecash focus:border-transparent transition-all duration-200 bg-white text-sm sm:text-base"
         />
       </div>
     </div>

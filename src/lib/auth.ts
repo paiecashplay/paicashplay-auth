@@ -2,10 +2,11 @@ import { UserType } from '@/types/auth';
 
 export const getUserTypeLabel = (type: UserType): string => {
   const labels = {
-    player: 'Joueur',
+    player: 'Licencié',
     club: 'Club',
     federation: 'Fédération',
-    donor: 'Donateur'
+    donor: 'Donateur',
+    company: 'Société'
   };
   return labels[type];
 };

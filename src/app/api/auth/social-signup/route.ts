@@ -33,6 +33,22 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Prepare metadata based on user type
+    const metadata: any = {};
+    if (userType === 'player') {
+      metadata.position = additionalData.position;
+      metadata.dateOfBirth = additionalData.dateOfBirth;
+    } else if (userType === 'club') {
+      metadata.organizationName = additionalData.clubName;
+    } else if (userType === 'federation') {
+      metadata.organizationName = additionalData.federationName;
+    } else if (userType === 'company') {
+      metadata.companyName = additionalData.organizationName;
+      metadata.siret = additionalData.position;
+    } else if (userType === 'donor') {
+      metadata.company = additionalData.company;
+    }
+
     // Create user account
     const createResult = await AuthService.createUser({
       email: profile.email,
@@ -42,7 +58,8 @@ export async function POST(request: NextRequest) {
       lastName,
       phone: phone || null,
       country: country || null,
-      ...additionalData
+      isPartner: userType === 'company',
+      metadata
     });
 
     // Get the created user with full data

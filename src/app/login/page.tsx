@@ -9,6 +9,7 @@ import SocialButtons from '@/components/ui/SocialButtons';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -81,14 +82,23 @@ export default function LoginPage() {
                 <i className="fas fa-lock mr-2 text-paiecash"></i>
                 Mot de passe
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input-field"
-                placeholder="Votre mot de passe"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-field pr-12"
+                  placeholder="Votre mot de passe"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                </button>
+              </div>
             </div>
 
             {error && (

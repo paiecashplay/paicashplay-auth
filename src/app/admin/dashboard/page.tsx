@@ -38,6 +38,7 @@ export default function AdminDashboard() {
       case 'player': return 'fas fa-running';
       case 'club': return 'fas fa-users';
       case 'federation': return 'fas fa-flag';
+      case 'company': return 'fas fa-briefcase';
       default: return 'fas fa-user';
     }
   };
@@ -48,6 +49,7 @@ export default function AdminDashboard() {
       case 'player': return 'text-blue-600 bg-blue-100';
       case 'club': return 'text-green-600 bg-green-100';
       case 'federation': return 'text-purple-600 bg-purple-100';
+      case 'company': return 'text-indigo-600 bg-indigo-100';
       default: return 'text-gray-600 bg-gray-100';
     }
   };
@@ -136,7 +138,13 @@ export default function AdminDashboard() {
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${getUserTypeColor(stat.userType)}`}>
                     <i className={`${getUserTypeIcon(stat.userType)} text-sm`}></i>
                   </div>
-                  <span className="font-medium text-gray-900 capitalize">{stat.userType}</span>
+                  <span className="font-medium text-gray-900">
+                    {stat.userType === 'donor' && 'Donateur'}
+                    {stat.userType === 'player' && 'Licencié'}
+                    {stat.userType === 'club' && 'Club'}
+                    {stat.userType === 'federation' && 'Fédération'}
+                    {stat.userType === 'company' && 'Société'}
+                  </span>
                 </div>
                 <div className="flex items-center">
                   <span className="text-2xl font-bold text-gray-900 mr-2">{stat.count}</span>

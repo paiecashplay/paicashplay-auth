@@ -168,6 +168,11 @@ const userResponse = await fetch('https://auth.paiecashplay.com/api/auth/userinf
 - Équipe ou académie de football
 - Gère des joueurs
 
+### Société
+- Entreprise ou organisation commerciale
+- Peut avoir le statut de partenaire officiel
+- Accès aux fonctionnalités de sponsoring d'entreprise
+
 ### Fédération
 - Fédération nationale de football
 - Gère des clubs

@@ -1,76 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthService } from '@/lib/auth-service';
-import { EmailService } from '@/lib/email-service';
+import { hashPassword } from '@/lib/password';
 import { prisma } from '@/lib/prisma';
 
-// Request password reset
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, token, newPassword } = body;
+    const { token, password } = body;
     
-    // If token and newPassword provided, reset password
-    if (token && newPassword) {
-      if (newPassword.length < 8) {
-        return NextResponse.json({ 
-          error: 'Password must be at least 8 characters' 
-        }, { status: 400 });
-      }
-      
-      await AuthService.resetPassword(token, newPassword);
-      
-      return NextResponse.json({
-        success: true,
-        message: 'Password reset successfully. You can now login with your new password.'
-      });
-    }
-    
-    // Otherwise, request password reset
-    if (!email) {
+    if (!token || !password) {
       return NextResponse.json({ 
-        error: 'Email is required' 
+        error: 'Token and password are required' 
       }, { status: 400 });
     }
     
-    // Get user info for email
-    const user = await prisma.user.findFirst({
-      where: { 
-        email: email.toLowerCase().trim(), 
-        isActive: true 
+    if (password.length < 8) {
+      return NextResponse.json({ 
+        error: 'Password must be at least 8 characters' 
+      }, { status: 400 });
+    }
+    
+    // Find valid reset token
+    const resetToken = await prisma.passwordReset.findFirst({
+      where: {
+        token,
+        used: false,
+        expiresAt: {
+          gt: new Date()
+        }
       },
       include: {
-        profile: {
-          select: {
-            firstName: true
-          }
-        }
+        user: true
       }
     });
     
-    const { resetToken } = await AuthService.requestPasswordReset(email);
-    
-    // Send reset email only if user exists
-    if (user && resetToken) {
-      await EmailService.sendPasswordResetEmail(
-        user.email, 
-        user.profile?.firstName || 'Utilisateur', 
-        resetToken
-      );
-    }
-    
-    return NextResponse.json({
-      success: true,
-      message: 'If an account with this email exists, you will receive a password reset link.'
-    });
-    
-  } catch (error: any) {
-    console.error('Password reset error:', error);
-    
-    if (error.message === 'Invalid or expired reset token') {
+    if (!resetToken) {
       return NextResponse.json({ 
         error: 'Invalid or expired reset token' 
       }, { status: 400 });
     }
+    
+    // Hash new password
+    const hashedPassword = await hashPassword(password);
+    
+    // Update user password
+    await prisma.user.update({
+      where: { id: resetToken.userId },
+      data: { password: hashedPassword }
+    });
+    
+    // Mark token as used
+    await prisma.passwordReset.update({
+      where: { id: resetToken.id },
+      data: { used: true }
+    });
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Password reset successfully'
+    });
+    
+  } catch (error: any) {
+    console.error('Password reset error:', error);
     
     return NextResponse.json({ 
       error: 'Internal server error' 

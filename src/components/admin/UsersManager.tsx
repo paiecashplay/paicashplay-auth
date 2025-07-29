@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useToast } from '@/components/ui/Toast';
 
 interface User {
   id: string;
@@ -18,6 +19,7 @@ interface User {
 export default function UsersManager() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const toast = useToast();
   const [filters, setFilters] = useState({
     userType: '',
     search: '',
@@ -57,7 +59,10 @@ export default function UsersManager() {
     }
   };
 
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
   const toggleUserStatus = async (userId: string, isActive: boolean) => {
+    setActionLoading(userId);
     try {
       await fetch(`/api/admin/users/${userId}`, {
         method: 'PATCH',
@@ -67,10 +72,13 @@ export default function UsersManager() {
       loadUsers();
     } catch (error) {
       console.error('Error updating user:', error);
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const verifyUserEmail = async (userId: string) => {
+    setActionLoading(`verify-${userId}`);
     try {
       await fetch(`/api/admin/users/${userId}/verify`, {
         method: 'POST'
@@ -78,14 +86,13 @@ export default function UsersManager() {
       loadUsers();
     } catch (error) {
       console.error('Error verifying user:', error);
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const resetUserPassword = async (userId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir réinitialiser le mot de passe de cet utilisateur ?')) {
-      return;
-    }
-    
+    setActionLoading(`reset-${userId}`);
     try {
       const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
         method: 'POST'
@@ -93,10 +100,15 @@ export default function UsersManager() {
       const data = await response.json();
       
       if (response.ok) {
-        alert(`Nouveau mot de passe temporaire : ${data.temporaryPassword}`);
+        toast.success('Mot de passe réinitialisé', `Nouveau mot de passe temporaire : ${data.temporaryPassword}`);
+      } else {
+        toast.error('Erreur', 'Impossible de réinitialiser le mot de passe');
       }
     } catch (error) {
       console.error('Error resetting password:', error);
+      toast.error('Erreur de connexion', 'Impossible de réinitialiser le mot de passe');
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -236,32 +248,47 @@ export default function UsersManager() {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => toggleUserStatus(user.id, user.is_active)}
+                        disabled={actionLoading === user.id}
                         className={`${
                           user.is_active 
                             ? 'text-red-600 hover:text-red-900' 
                             : 'text-green-600 hover:text-green-900'
-                        }`}
+                        } disabled:opacity-50`}
                         title={user.is_active ? 'Désactiver' : 'Activer'}
                       >
-                        <i className={`fas ${user.is_active ? 'fa-ban' : 'fa-check'}`}></i>
+                        {actionLoading === user.id ? (
+                          <i className="fas fa-spinner fa-spin"></i>
+                        ) : (
+                          <i className={`fas ${user.is_active ? 'fa-ban' : 'fa-check'}`}></i>
+                        )}
                       </button>
                       
                       {!user.is_verified && (
                         <button
                           onClick={() => verifyUserEmail(user.id)}
-                          className="text-blue-600 hover:text-blue-900"
+                          disabled={actionLoading === `verify-${user.id}`}
+                          className="text-blue-600 hover:text-blue-900 disabled:opacity-50"
                           title="Vérifier l'email"
                         >
-                          <i className="fas fa-envelope-check"></i>
+                          {actionLoading === `verify-${user.id}` ? (
+                            <i className="fas fa-spinner fa-spin"></i>
+                          ) : (
+                            <i className="fas fa-envelope-check"></i>
+                          )}
                         </button>
                       )}
                       
                       <button
                         onClick={() => resetUserPassword(user.id)}
-                        className="text-orange-600 hover:text-orange-900"
+                        disabled={actionLoading === `reset-${user.id}`}
+                        className="text-orange-600 hover:text-orange-900 disabled:opacity-50"
                         title="Réinitialiser le mot de passe"
                       >
-                        <i className="fas fa-key"></i>
+                        {actionLoading === `reset-${user.id}` ? (
+                          <i className="fas fa-spinner fa-spin"></i>
+                        ) : (
+                          <i className="fas fa-key"></i>
+                        )}
                       </button>
                     </div>
                   </td>

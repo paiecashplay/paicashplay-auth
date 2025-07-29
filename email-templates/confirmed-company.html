@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Compte activé - Entreprise</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #374151; background-color: #f8fafc; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .header { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); padding: 40px 32px; text-align: center; position: relative; }
+        .corporate-badge { position: absolute; top: 16px; right: 16px; background-color: rgba(255, 255, 255, 0.2); color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        .logo { color: white; font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+        .tagline { color: rgba(255, 255, 255, 0.9); font-size: 16px; font-weight: 500; }
+        .content { padding: 48px 32px; }
+        .success-icon { text-align: center; margin-bottom: 32px; }
+        .success-circle { width: 80px; height: 80px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; box-shadow: 0 8px 25px -8px rgba(99, 102, 241, 0.4); }
+        .title { font-size: 32px; font-weight: 700; color: #111827; margin-bottom: 16px; text-align: center; }
+        .subtitle { font-size: 18px; color: #6b7280; margin-bottom: 32px; text-align: center; }
+        .cta-button { display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin: 32px 0; box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.3); transition: all 0.2s; }
+        .features { background-color: #f0f4ff; border-radius: 12px; padding: 24px; margin: 32px 0; border: 1px solid #c7d2fe; }
+        .features h3 { color: #111827; font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+        .feature-list { list-style: none; }
+        .feature-item { display: flex; align-items: flex-start; margin-bottom: 12px; }
+        .feature-icon { width: 20px; height: 20px; background-color: #6366f1; border-radius: 50%; margin-right: 12px; margin-top: 2px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; flex-shrink: 0; }
+        .rse-highlight { background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 24px 0; }
+        .dashboard-preview { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 24px 0; }
+        .footer { background-color: #f8fafc; padding: 32px; text-align: center; border-top: 1px solid #e5e7eb; }
+        .footer-text { font-size: 14px; color: #6b7280; margin-bottom: 16px; }
+        .footer-links { font-size: 12px; color: #9ca3af; }
+        .footer-links a { color: #9ca3af; text-decoration: none; margin: 0 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="corporate-badge">Corporate</div>
+            <div class="logo">PaieCashPlay</div>
+            <div class="tagline">Sport Solidaire</div>
+        </div>
+        
+        <div class="content">
+            <div class="success-icon">
+                <div class="success-circle">🏢</div>
+            </div>
+            
+            <h1 class="title">Parfait {{firstName}} {{lastName}} !</h1>
+            <p class="subtitle">Votre profil entreprise est maintenant confirmé</p>
+            
+            <p style="margin-bottom: 24px; text-align: center;">Votre engagement RSE prend maintenant vie ! Votre entreprise peut commencer à créer un impact social positif à travers le sport solidaire.</p>
+            
+            <div class="rse-highlight">
+                <p style="font-weight: 600; color: #92400e; margin-bottom: 8px;">💰 Avantages fiscaux confirmés</p>
+                <p style="font-size: 14px; color: #92400e;">Votre SIRET est enregistré. Réduction d'impôt de 60% garantie selon l'article 238 bis du CGI</p>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="{{dashboardUrl}}" class="cta-button">Accéder à mon espace Entreprise</a>
+            </div>
+            
+            <div class="features">
+                <h3>💼 Votre plateforme RSE est active</h3>
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <div class="feature-icon">🎯</div>
+                        <div><strong>Sponsoring ciblé</strong> - Clubs et licenciés</div>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-icon">💼</div>
+                        <div><strong>Dons diversifiés</strong> - Financiers et matériels</div>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-icon">📊</div>
+                        <div><strong>Rapports RSE</strong> - Impact mesurable</div>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-icon">🧾</div>
+                        <div><strong>Reçus automatiques</strong> - Conformité fiscale</div>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-icon">🌟</div>
+                        <div><strong>Valorisation marque</strong> - Visibilité communauté</div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="dashboard-preview">
+                <p style="font-weight: 600; color: #4f46e5; margin-bottom: 8px;">📊 Dashboard Corporate</p>
+                <p style="font-size: 14px;">Accédez à vos outils : 👥 Sponsorings • 👕 Dons matériels • 📄 Reçus fiscaux</p>
+            </div>
+            
+            <p style="font-size: 14px; color: #6b7280; text-align: center; margin-top: 32px;">
+                <strong>Claire Dupont</strong> - Directrice des Partenariats Corporate<br/>
+                <a href="mailto:corporate@paiecashplay.com" style="color: #6366f1;">corporate@paiecashplay.com</a>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-text">Votre engagement RSE est maintenant actif ! 🚀</div>
+            <div class="footer-links">
+                <a href="#">Conditions d'utilisation</a> •
+                <a href="#">Confidentialité</a> •
+                <a href="#">Se désinscrire</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

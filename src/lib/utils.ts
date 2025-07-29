@@ -4,13 +4,7 @@ export function getClientIP(request: any): string {
          'unknown';
 }
 
-export function validateEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-export function validatePassword(password: string): boolean {
-  return password.length >= 8;
-}
+// Fonctions déplacées vers auth.ts pour éviter la duplication
 
 export function generateRandomString(length: number = 32): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -21,12 +15,4 @@ export function generateRandomString(length: number = 32): string {
   return result;
 }
 
-export function formatUserType(userType: string): string {
-  const labels: Record<string, string> = {
-    donor: 'Donateur',
-    player: 'Joueur', 
-    club: 'Club',
-    federation: 'Fédération'
-  };
-  return labels[userType] || userType;
-}
+// Fonction déplacée vers auth.ts (getUserTypeLabel) pour éviter la duplication

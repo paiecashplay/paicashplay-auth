@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useToast } from '@/components/ui/Toast';
 
 interface SystemConfig {
   id: string;
@@ -15,6 +16,7 @@ export default function SettingsManager() {
   const [configs, setConfigs] = useState<SystemConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('smtp');
+  const toast = useToast();
   const [smtpConfig, setSmtpConfig] = useState({
     host: '',
     port: 587,
@@ -66,8 +68,11 @@ export default function SettingsManager() {
     }
   };
 
+  const [smtpLoading, setSmtpLoading] = useState(false);
+
   const updateSmtpConfig = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSmtpLoading(true);
     try {
       const response = await fetch('/api/admin/configs/smtp', {
         method: 'PUT',
@@ -76,15 +81,22 @@ export default function SettingsManager() {
       });
 
       if (response.ok) {
-        alert('Configuration SMTP mise à jour avec succès');
+        toast.success('Configuration SMTP', 'Configuration mise à jour avec succès');
         loadSmtpConfig();
+      } else {
+        toast.error('Erreur SMTP', 'Impossible de mettre à jour la configuration');
       }
     } catch (error) {
       console.error('Error updating SMTP config:', error);
+    } finally {
+      setSmtpLoading(false);
     }
   };
 
+  const [testLoading, setTestLoading] = useState(false);
+
   const testSmtpConnection = async () => {
+    setTestLoading(true);
     setTestEmailResult('Test en cours...');
     try {
       const response = await fetch('/api/admin/test-smtp', {
@@ -97,6 +109,8 @@ export default function SettingsManager() {
       setTestEmailResult(response.ok ? 'Test réussi ✅' : `Erreur: ${data.error}`);
     } catch (error) {
       setTestEmailResult('Erreur de connexion ❌');
+    } finally {
+      setTestLoading(false);
     }
   };
 
@@ -229,17 +243,33 @@ export default function SettingsManager() {
             <div className="flex space-x-3">
               <button
                 type="submit"
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                disabled={smtpLoading}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sauvegarder
+                {smtpLoading ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin mr-2"></i>
+                    Sauvegarde...
+                  </>
+                ) : (
+                  'Sauvegarder'
+                )}
               </button>
               
               <button
                 type="button"
                 onClick={testSmtpConnection}
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                disabled={testLoading}
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Tester la connexion
+                {testLoading ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin mr-2"></i>
+                    Test...
+                  </>
+                ) : (
+                  'Tester la connexion'
+                )}
               </button>
             </div>
 

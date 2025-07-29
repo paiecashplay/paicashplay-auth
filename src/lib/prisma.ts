@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { ensureDbInitialized } from './db-init';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -15,10 +16,7 @@ let initPromise: Promise<void> | null = null;
 
 export async function ensurePrismaReady() {
   if (!initPromise) {
-    initPromise = (async () => {
-      const { ensureDbInitialized } = await import('./db-init');
-      await ensureDbInitialized();
-    })();
+    initPromise = ensureDbInitialized();
   }
   return initPromise;
 }

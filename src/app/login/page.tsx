@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Logo from '@/components/ui/Logo';
 import { useToast } from '@/components/ui/Toast';
 import SocialButtons from '@/components/ui/SocialButtons';
@@ -13,7 +13,29 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const toast = useToast();
+
+  useEffect(() => {
+    const verified = searchParams.get('verified');
+    const reset = searchParams.get('reset');
+    
+    if (verified === 'true') {
+      toast.success('Compte vérifié !', 'Votre compte a été activé avec succès. Vous pouvez maintenant vous connecter.');
+    }
+    
+    if (reset === 'success') {
+      toast.success('Mot de passe modifié !', 'Votre mot de passe a été mis à jour avec succès. Vous pouvez maintenant vous connecter.');
+    }
+    
+    // Nettoyer l'URL pour éviter les re-renders
+    if (verified || reset) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('verified');
+      url.searchParams.delete('reset');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

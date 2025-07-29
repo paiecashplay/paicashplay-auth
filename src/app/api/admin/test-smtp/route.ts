@@ -26,11 +26,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { testEmail } = body;
     
+    // Test SMTP connection first
+    const connectionTest = await EmailService.testSmtpConnection();
+    
+    if (!connectionTest.success) {
+      return NextResponse.json({ 
+        error: `Connexion SMTP échouée: ${connectionTest.message}`,
+        code: connectionTest.code
+      }, { status: 500 });
+    }
+    
     // Send test email
     await EmailService.sendWelcomeEmail(
       testEmail || admin.email,
       'Test',
-      'Test SMTP Configuration'
+      'Utilisateur',
+      'player' as any
     );
     
     // Log the action
@@ -44,6 +55,18 @@ export async function POST(request: NextRequest) {
     }
     
     console.error('SMTP test error:', error);
-    return NextResponse.json({ error: error.message || 'SMTP test failed' }, { status: 500 });
+    
+    // Gestion spécifique des erreurs de timeout
+    if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+      return NextResponse.json({ 
+        error: 'Timeout de connexion SMTP. Vérifiez l\'hôte et le port.',
+        code: 'TIMEOUT'
+      }, { status: 500 });
+    }
+    
+    return NextResponse.json({ 
+      error: error.message || 'SMTP test failed',
+      code: error.code
+    }, { status: 500 });
   }
 }

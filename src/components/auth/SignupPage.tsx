@@ -5,6 +5,7 @@ import { UserType } from '@/types/auth';
 import { getUserTypeLabel } from '@/lib/auth';
 import PhoneInput from '@/components/ui/PhoneInput';
 import DatePicker from '@/components/ui/DatePicker';
+import { useToast } from '@/components/ui/Toast';
 
 const personas = [
   { id: 'player' as UserType, icon: 'fas fa-user', label: 'Licencié', desc: 'Joueur individuel', color: 'text-emerald-500' },
@@ -39,6 +40,7 @@ export default function SignupPage() {
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const toast = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,14 +86,15 @@ export default function SignupPage() {
       const data = await response.json();
       
       if (response.ok) {
-        // Success - redirect to verification page or show success message
-        window.location.href = '/verify-email?email=' + encodeURIComponent(formData.email);
+        // Success - redirect to verification page
+        const redirectUrl = data.redirectUrl || `/verify-email?email=${encodeURIComponent(formData.email)}`;
+        window.location.href = redirectUrl;
       } else {
-        alert(data.error || 'Une erreur est survenue lors de la création du compte');
+        toast.error('Erreur d\'inscription', data.error || 'Une erreur est survenue lors de la création du compte');
       }
     } catch (error) {
       console.error('Signup error:', error);
-      alert('Une erreur est survenue lors de la création du compte');
+      toast.error('Erreur de connexion', 'Une erreur est survenue lors de la création du compte');
     } finally {
       setLoading(false);
     }

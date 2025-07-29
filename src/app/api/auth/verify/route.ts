@@ -45,11 +45,12 @@ export async function POST(request: NextRequest) {
     // Verify email
     await AuthService.verifyEmail(token);
     
-    // Send welcome email
-    await EmailService.sendWelcomeEmail(
-      verification.user.email, 
-      verification.user.profile?.firstName || 'Utilisateur', 
-      verification.user.userType
+    // Send account confirmed email
+    await EmailService.sendAccountConfirmedEmail(
+      verification.user.email,
+      verification.user.profile?.firstName || 'Utilisateur',
+      verification.user.profile?.lastName || '',
+      verification.user.userType as any
     );
     
     return NextResponse.json({

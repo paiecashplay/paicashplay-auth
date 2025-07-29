@@ -1,10 +1,12 @@
-import { prisma } from './prisma';
+import { PrismaClient } from '@prisma/client';
 import { hashPassword } from './password';
 
 let initialized = false;
 
 export async function ensureDbInitialized() {
   if (initialized) return;
+  
+  const prisma = new PrismaClient();
   
   try {
     console.log('🔄 Checking database initialization...');
@@ -24,7 +26,7 @@ export async function ensureDbInitialized() {
     }
     
     // Seed data if needed
-    await seedDefaultData();
+    await seedDefaultData(prisma);
     
     initialized = true;
     console.log('✅ Database initialized successfully');
@@ -32,10 +34,12 @@ export async function ensureDbInitialized() {
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
     // Don't throw - let app continue with potential issues
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
-async function seedDefaultData() {
+async function seedDefaultData(prisma: PrismaClient) {
   // Check if admin exists
   const adminExists = await prisma.adminUser.findUnique({
     where: { username: 'admin' }

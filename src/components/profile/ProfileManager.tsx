@@ -81,7 +81,10 @@ export default function ProfileManager() {
     }
   };
 
+  const [saveLoading, setSaveLoading] = useState(false);
+
   const handleSave = async () => {
+    setSaveLoading(true);
     try {
       const response = await fetch('/api/profile', {
         method: 'PUT',
@@ -99,6 +102,8 @@ export default function ProfileManager() {
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Erreur', 'Erreur de connexion');
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -436,10 +441,20 @@ export default function ProfileManager() {
               </button>
               <button
                 onClick={handleSave}
-                className="btn-primary"
+                disabled={saveLoading}
+                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <i className="fas fa-save mr-2"></i>
-                Enregistrer
+                {saveLoading ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin mr-2"></i>
+                    Enregistrement...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-save mr-2"></i>
+                    Enregistrer
+                  </>
+                )}
               </button>
             </div>
           )}

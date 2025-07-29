@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Compte activé - Licencié</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #374151; background-color: #f8fafc; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .header { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 40px 32px; text-align: center; }
+        .logo { color: white; font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+        .tagline { color: rgba(255, 255, 255, 0.9); font-size: 16px; font-weight: 500; }
+        .content { padding: 48px 32px; }
+        .success-icon { text-align: center; margin-bottom: 32px; }
+        .success-circle { width: 80px; height: 80px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; box-shadow: 0 8px 25px -8px rgba(16, 185, 129, 0.4); }
+        .title { font-size: 32px; font-weight: 700; color: #111827; margin-bottom: 16px; text-align: center; }
+        .subtitle { font-size: 18px; color: #6b7280; margin-bottom: 32px; text-align: center; }
+        .cta-button { display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin: 32px 0; box-shadow: 0 4px 14px 0 rgba(249, 115, 22, 0.3); transition: all 0.2s; }
+        .features { background-color: #fff7ed; border-radius: 12px; padding: 24px; margin: 32px 0; border: 1px solid #fed7aa; }
+        .features h3 { color: #111827; font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+        .feature-list { list-style: none; }
+        .feature-item { display: flex; align-items: flex-start; margin-bottom: 12px; }
+        .feature-icon { width: 20px; height: 20px; background-color: #f97316; border-radius: 50%; margin-right: 12px; margin-top: 2px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; flex-shrink: 0; }
+        .footer { background-color: #f8fafc; padding: 32px; text-align: center; border-top: 1px solid #e5e7eb; }
+        .footer-text { font-size: 14px; color: #6b7280; margin-bottom: 16px; }
+        .footer-links { font-size: 12px; color: #9ca3af; }
+        .footer-links a { color: #9ca3af; text-decoration: none; margin: 0 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">PaieCashPlay</div>
+            <div class="tagline">Sport Solidaire</div>
+        </div>
+        
+        <div class="content">
+            <div class="success-icon">
+                <div class="success-circle">✓</div>
+            </div>
+            
+            <h1 class="title">Félicitations {{firstName}} !</h1>
+            <p class="subtitle">Votre compte licencié est maintenant actif</p>
+            
+            <p style="margin-bottom: 24px; text-align: center;">Votre parcours sportif solidaire peut maintenant commencer ! Votre licence digitale PaieCashPlay est prête et vous donne accès à tout l'écosystème.</p>
+            
+            <div style="text-align: center;">
+                <a href="{{dashboardUrl}}" class="cta-button">Télécharger ma licence</a>
+            </div>
+            
+            <div class="features">
+                <h3>🎉 Votre compte est maintenant actif</h3>
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <div class="feature-icon">📱</div>
+                        <div><strong>Licence digitale</strong> - Téléchargez votre licence officielle</div>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-icon">📊</div>
+                        <div><strong>Tableau de bord</strong> - Consultez vos statistiques</div>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-icon">🏟️</div>
+                        <div><strong>Clubs & Académies</strong> - Rejoignez une équipe</div>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-icon">🎯</div>
+                        <div><strong>Événements</strong> - Participez aux compétitions</div>
+                    </li>
+                    <li class="feature-icon">💝</div>
+                        <div><strong>Parrainages</strong> - Recevez du soutien pour votre développement</div>
+                    </li>
+                </ul>
+            </div>
+            
+            <p style="font-size: 14px; color: #6b7280; text-align: center; margin-top: 32px;">
+                Besoin d'aide ? Contactez-nous à <a href="mailto:support@paiecashplay.com" style="color: #f97316;">support@paiecashplay.com</a>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-text">Bienvenue dans la communauté PaieCashPlay ! 🚀</div>
+            <div class="footer-links">
+                <a href="#">Conditions d'utilisation</a> •
+                <a href="#">Confidentialité</a> •
+                <a href="#">Se désinscrire</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

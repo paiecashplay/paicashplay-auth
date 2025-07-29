@@ -47,12 +47,13 @@ export async function POST(request: NextRequest) {
     });
     
     // Send verification email
-    await EmailService.sendVerificationEmail(email, firstName, verificationToken, userType);
+    await EmailService.sendVerificationEmail(email, firstName, lastName, verificationToken, userType as any);
     
     return NextResponse.json({
       success: true,
       message: 'Account created successfully. Please check your email to verify your account.',
-      userId
+      userId,
+      redirectUrl: `/verify-email?email=${encodeURIComponent(email)}`
     });
     
   } catch (error: any) {

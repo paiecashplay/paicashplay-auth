@@ -42,8 +42,11 @@ export default function ClientsManager() {
     }
   };
 
+  const [createLoading, setCreateLoading] = useState(false);
+
   const createClient = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCreateLoading(true);
     try {
       const response = await fetch('/api/admin/clients', {
         method: 'POST',
@@ -65,10 +68,15 @@ export default function ClientsManager() {
       }
     } catch (error) {
       console.error('Error creating client:', error);
+    } finally {
+      setCreateLoading(false);
     }
   };
 
+  const [toggleLoading, setToggleLoading] = useState<string | null>(null);
+
   const toggleClientStatus = async (clientId: string, isActive: boolean) => {
+    setToggleLoading(clientId);
     try {
       await fetch(`/api/admin/clients/${clientId}`, {
         method: 'PATCH',
@@ -78,6 +86,8 @@ export default function ClientsManager() {
       loadClients();
     } catch (error) {
       console.error('Error updating client:', error);
+    } finally {
+      setToggleLoading(null);
     }
   };
 
@@ -170,10 +180,14 @@ export default function ClientsManager() {
                 <td className="px-6 py-4 text-sm font-medium space-x-2">
                   <button
                     onClick={() => toggleClientStatus(client.client_id, client.is_active)}
+                    disabled={toggleLoading === client.client_id}
                     className={`${
                       client.is_active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'
-                    }`}
+                    } disabled:opacity-50`}
                   >
+                    {toggleLoading === client.client_id ? (
+                      <i className="fas fa-spinner fa-spin mr-1"></i>
+                    ) : null}
                     {client.is_active ? 'Désactiver' : 'Activer'}
                   </button>
                   <button
@@ -258,9 +272,17 @@ export default function ClientsManager() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  disabled={createLoading}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Créer
+                  {createLoading ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin mr-2"></i>
+                      Création...
+                    </>
+                  ) : (
+                    'Créer'
+                  )}
                 </button>
               </div>
             </form>

@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { EmailTemplateService } from './email-templates';
 import { ConfigService } from './config-service';
+import { UserType } from '@/types/auth';
 
 export class EmailService {
   private static async getTransporter() {
@@ -14,14 +15,22 @@ export class EmailService {
         user: smtpConfig.user,
         pass: smtpConfig.password,
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 5000,
+      socketTimeout: 10000,
+      tls: {
+        rejectUnauthorized: false
+      }
     });
   }
 
-  static async sendVerificationEmail(email: string, firstName: string, token: string, userType: string) {
+  static async sendVerificationEmail(email: string, firstName: string, lastName: string, token: string, userType: UserType) {
     const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
     
     const html = await EmailTemplateService.getVerificationEmail({
       firstName,
+      lastName,
+      email,
       userType,
       verificationUrl
     });
@@ -56,11 +65,13 @@ export class EmailService {
     });
   }
   
-  static async sendWelcomeEmail(email: string, firstName: string, userType: string) {
+  static async sendWelcomeEmail(email: string, firstName: string, lastName: string, userType: UserType) {
     const dashboardUrl = `${process.env.NEXTAUTH_URL}/profile`;
     
     const html = await EmailTemplateService.getWelcomeEmail({
       firstName,
+      lastName,
+      email,
       userType,
       dashboardUrl
     });
@@ -68,10 +79,50 @@ export class EmailService {
     const transporter = await this.getTransporter();
     const smtpConfig = await ConfigService.getSmtpConfig();
     
+    const subject = EmailTemplateService.getWelcomeSubject(userType, firstName);
+    
     await transporter.sendMail({
       from: `${smtpConfig.fromName} <${smtpConfig.fromEmail}>`,
       to: email,
-      subject: `Bienvenue sur PaieCashPlay, ${firstName} !`,
+      subject,
+      html
+    });
+  }
+  
+  static async testSmtpConnection() {
+    try {
+      const transporter = await this.getTransporter();
+      await transporter.verify();
+      return { success: true, message: 'Connexion SMTP réussie' };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        message: error.message || 'Échec de la connexion SMTP',
+        code: error.code
+      };
+    }
+  }
+
+  static async sendAccountConfirmedEmail(email: string, firstName: string, lastName: string, userType: UserType) {
+    const dashboardUrl = `${process.env.NEXTAUTH_URL}/profile`;
+    
+    const html = await EmailTemplateService.getAccountConfirmedEmail({
+      firstName,
+      lastName,
+      email,
+      userType,
+      dashboardUrl
+    });
+    
+    const transporter = await this.getTransporter();
+    const smtpConfig = await ConfigService.getSmtpConfig();
+    
+    const subject = EmailTemplateService.getAccountConfirmedSubject(userType, firstName);
+    
+    await transporter.sendMail({
+      from: `${smtpConfig.fromName} <${smtpConfig.fromEmail}>`,
+      to: email,
+      subject,
       html
     });
   }

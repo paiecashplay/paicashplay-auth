@@ -47,25 +47,34 @@ export default function SignupPage() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const socialToken = urlParams.get('social');
+    const provider = urlParams.get('provider');
+    const socialDataParam = urlParams.get('socialData');
     
-    if (socialToken) {
+    if (provider && socialDataParam) {
       try {
-        const data = JSON.parse(atob(socialToken));
-        setSocialData(data);
+        const data = JSON.parse(decodeURIComponent(socialDataParam));
+        console.log('Social data received:', data);
+        setSocialData({ provider, ...data });
         
         // Pre-fill form with social data
         setFormData(prev => ({
           ...prev,
-          email: data.profile.email || '',
-          firstName: data.profile.firstName || data.profile.name?.split(' ')[0] || '',
-          lastName: data.profile.lastName || data.profile.name?.split(' ').slice(1).join(' ') || ''
+          email: data.email || '',
+          firstName: data.firstName || '',
+          lastName: data.lastName || ''
         }));
+        
+        // Show success message
+        toast.success(
+          `Authentification ${provider} réussie !`, 
+          `Vos informations ont été récupérées. Complétez votre inscription ci-dessous.`
+        );
       } catch (error) {
         console.error('Error parsing social data:', error);
+        toast.error('Erreur', 'Impossible de récupérer les données sociales');
       }
     }
-  }, []);
+  }, []); // Retirer toast des dépendances
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,33 +84,70 @@ export default function SignupPage() {
     // Handle social signup
     if (socialData) {
       try {
-        const response = await fetch('/api/auth/social-signup', {
+        // Prepare metadata based on user type
+        const metadata: any = {};
+        if (formData.userType === 'company') {
+          metadata.companyName = formData.organizationName;
+          metadata.siret = formData.position;
+        } else if (formData.userType === 'club') {
+          metadata.organizationName = formData.clubName;
+        } else if (formData.userType === 'federation') {
+          metadata.organizationName = formData.federationName;
+        } else if (formData.userType === 'player') {
+          metadata.position = formData.position;
+          metadata.dateOfBirth = formData.dateOfBirth;
+        }
+
+        const response = await fetch('/api/auth/social/complete-signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            socialToken: new URLSearchParams(window.location.search).get('social'),
+            socialData,
             userType: formData.userType,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            phone: formData.phone,
-            country: formData.country,
-            clubName: formData.clubName,
-            federationName: formData.federationName,
-            position: formData.position,
-            dateOfBirth: formData.dateOfBirth
+            additionalData: {
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              phone: formData.phone,
+              country: formData.country || 'FR',
+              profileData: metadata
+            }
           })
         });
 
         const data = await response.json();
 
         if (response.ok) {
-          toast.success('Compte créé avec succès', 'Connexion automatique...');
-          setTimeout(() => router.push('/dashboard'), 1000);
+          toast.success('Compte créé avec succès !', 'Connexion automatique...');
+          
+          // Vérifier s'il y a des paramètres OAuth pour redirection
+          const urlParams = new URLSearchParams(window.location.search);
+          const clientId = urlParams.get('client_id');
+          const redirectUri = urlParams.get('redirect_uri');
+          const scope = urlParams.get('scope');
+          const oauthState = urlParams.get('oauth_state');
+          
+          setTimeout(() => {
+            if (clientId && redirectUri) {
+              // Flux OAuth - rediriger vers l'endpoint d'autorisation
+              const authorizeUrl = new URL('/api/auth/authorize', window.location.origin);
+              authorizeUrl.searchParams.set('response_type', 'code');
+              authorizeUrl.searchParams.set('client_id', clientId);
+              authorizeUrl.searchParams.set('redirect_uri', redirectUri);
+              if (scope) authorizeUrl.searchParams.set('scope', scope);
+              if (oauthState) authorizeUrl.searchParams.set('state', oauthState);
+              
+              window.location.href = authorizeUrl.toString();
+            } else {
+              // Connexion directe - rediriger vers le dashboard
+              router.push('/dashboard');
+            }
+          }, 1500);
         } else {
           toast.error('Erreur de création', data.error || 'Impossible de créer le compte');
           setError(data.error || 'Erreur de création du compte');
         }
       } catch (error) {
+        console.error('Social signup error:', error);
         setError('Erreur de connexion');
       } finally {
         setLoading(false);
@@ -224,12 +270,17 @@ export default function SignupPage() {
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
                         Prénom
+                        {socialData && formData.firstName && (
+                          <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
+                            <i className="fas fa-check mr-1"></i>Auto
+                          </span>
+                        )}
                       </label>
                       <input
                         type="text"
                         value={formData.firstName}
                         onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                        className="input-field"
+                        className={`input-field ${socialData && formData.firstName ? 'bg-emerald-50 border-emerald-300' : ''}`}
                         placeholder="Votre prénom"
                         required
                       />
@@ -237,12 +288,17 @@ export default function SignupPage() {
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
                         Nom
+                        {socialData && formData.lastName && (
+                          <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
+                            <i className="fas fa-check mr-1"></i>Auto
+                          </span>
+                        )}
                       </label>
                       <input
                         type="text"
                         value={formData.lastName}
                         onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                        className="input-field"
+                        className={`input-field ${socialData && formData.lastName ? 'bg-emerald-50 border-emerald-300' : ''}`}
                         placeholder="Votre nom"
                         required
                       />
@@ -560,17 +616,26 @@ export default function SignupPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-3">
                 <i className="fas fa-envelope mr-2 text-paiecash"></i>
                 Adresse email <span className="text-red-500">*</span>
-                {socialData && <span className="text-sm text-gray-500 ml-2">(depuis {socialData.provider})</span>}
+                {socialData && (
+                  <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
+                    <i className="fas fa-check mr-1"></i>Vérifié par {socialData.provider}
+                  </span>
+                )}
               </label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className={`input-field ${socialData ? 'bg-gray-50' : ''}`}
-                placeholder="votre@email.com"
-                disabled={!!socialData}
-                required
-              />
+              <div className="relative">
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className={`input-field ${socialData ? 'bg-emerald-50 border-emerald-300' : ''}`}
+                  placeholder="votre@email.com"
+                  readOnly={!!socialData}
+                  required
+                />
+                {socialData && (
+                  <i className="fas fa-lock absolute right-3 top-1/2 transform -translate-y-1/2 text-emerald-500"></i>
+                )}
+              </div>
             </div>
 
             {/* Password - Only for regular signup */}
@@ -694,7 +759,33 @@ export default function SignupPage() {
           </div>
         )}
 
-        {!socialData && <SocialButtons mode="signup" />}
+        {!socialData && (
+          <div className="mt-8">
+            <SocialButtons mode="signup" />
+          </div>
+        )}
+        
+        {socialData && (
+          <div className="mt-8 p-4 bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-xl">
+            <div className="flex items-center mb-3">
+              <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center mr-3">
+                <i className={`fab fa-${socialData.provider} text-white text-sm`}></i>
+              </div>
+              <div>
+                <span className="text-sm font-bold text-emerald-700 capitalize">
+                  Inscription avec {socialData.provider}
+                </span>
+                <p className="text-xs text-emerald-600 mt-1">
+                  Vos informations ont été récupérées automatiquement
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center text-xs text-emerald-600">
+              <i className="fas fa-check-circle mr-2"></i>
+              <span>Email vérifié • Pas de mot de passe requis • Inscription sécurisée</span>
+            </div>
+          </div>
+        )}
 
         <div className="text-center mt-8">
           <p className="text-sm text-gray-500">

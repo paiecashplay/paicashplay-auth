@@ -4,6 +4,7 @@ import { prisma } from './prisma';
 import { RateLimitService } from './rate-limit';
 import { AuditService } from './audit';
 
+
 export interface CreateUserData {
   email: string;
   password: string;

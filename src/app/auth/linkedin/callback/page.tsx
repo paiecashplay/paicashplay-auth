@@ -3,7 +3,7 @@
 import { useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-function GoogleCallbackContent() {
+function LinkedInCallbackContent() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -13,8 +13,8 @@ function GoogleCallbackContent() {
       const error = searchParams.get('error');
 
       if (error) {
-        console.error('Google OAuth error:', error);
-        window.location.href = `/login?error=${encodeURIComponent('Erreur d\'authentification Google')}`;
+        console.error('LinkedIn OAuth error:', error);
+        window.location.href = `/login?error=${encodeURIComponent('Erreur d\'authentification LinkedIn')}`;
         return;
       }
 
@@ -25,7 +25,6 @@ function GoogleCallbackContent() {
       }
 
       try {
-        // Décoder l'état pour récupérer les informations
         let stateData;
         try {
           stateData = JSON.parse(atob(state));
@@ -33,12 +32,11 @@ function GoogleCallbackContent() {
           throw new Error('État invalide');
         }
 
-        // Échanger le code contre un access token et traiter l'authentification
         const response = await fetch('/api/auth/social/callback', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            provider: 'google',
+            provider: 'linkedin',
             code,
             state: stateData
           })
@@ -48,9 +46,8 @@ function GoogleCallbackContent() {
 
         if (response.ok) {
           if (data.requiresSignup) {
-            // Rediriger vers signup avec les données pré-remplies
             const params = new URLSearchParams({
-              provider: 'google',
+              provider: 'linkedin',
               socialData: JSON.stringify(data.socialData)
             });
             
@@ -94,7 +91,7 @@ function GoogleCallbackContent() {
           throw new Error(data.error || 'Erreur d\'authentification');
         }
       } catch (error: any) {
-        console.error('Google callback error:', error);
+        console.error('LinkedIn callback error:', error);
         const errorMessage = encodeURIComponent(error.message || 'Erreur d\'authentification');
         window.location.href = `/login?error=${errorMessage}`;
       }
@@ -108,7 +105,7 @@ function GoogleCallbackContent() {
       <div className="card-elevated w-full max-w-md">
         <div className="text-center py-8">
           <i className="fas fa-spinner fa-spin text-paiecash text-2xl mb-4"></i>
-          <p className="text-gray-600">Authentification Google en cours...</p>
+          <p className="text-gray-600">Authentification LinkedIn en cours...</p>
           <p className="text-sm text-gray-500 mt-2">Veuillez patienter...</p>
         </div>
       </div>
@@ -116,7 +113,7 @@ function GoogleCallbackContent() {
   );
 }
 
-export default function GoogleCallbackPage() {
+export default function LinkedInCallbackPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen gradient-bg flex items-center justify-center">
@@ -128,7 +125,7 @@ export default function GoogleCallbackPage() {
         </div>
       </div>
     }>
-      <GoogleCallbackContent />
+      <LinkedInCallbackContent />
     </Suspense>
   );
 }

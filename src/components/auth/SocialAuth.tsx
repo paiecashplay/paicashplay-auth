@@ -50,127 +50,58 @@ export default function SocialAuth({
     setLoading(provider.name);
 
     try {
-      // Étape 1: Obtenir le token d'accès du provider
-      const accessToken = await getAccessTokenFromProvider(provider);
-      
-      if (!accessToken) {
-        throw new Error('Impossible d\'obtenir le token d\'accès');
-      }
+      // Créer un état avec les informations nécessaires
+      const state = btoa(JSON.stringify({
+        mode,
+        userType,
+        additionalData,
+        timestamp: Date.now()
+      }));
 
-      // Étape 2: Authentifier avec notre API
-      const response = await fetch('/api/auth/social', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          provider: provider.name,
-          access_token: accessToken,
-          userType,
-          additionalData
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success('Succès', data.message);
-        onSuccess?.(data.user);
-      } else {
-        throw new Error(data.error || 'Erreur d\'authentification');
-      }
+      // Redirection directe vers le provider
+      const authUrl = getAuthUrl(provider, state);
+      window.location.href = authUrl;
     } catch (error: any) {
       const errorMessage = error.message || 'Erreur de connexion';
       toast.error('Erreur', errorMessage);
       onError?.(errorMessage);
-    } finally {
       setLoading(null);
     }
   };
 
-  const getAccessTokenFromProvider = async (provider: SocialProvider): Promise<string | null> => {
-    return new Promise((resolve, reject) => {
-      switch (provider.name) {
-        case 'google':
-          handleGoogleAuth(resolve, reject);
-          break;
-        case 'facebook':
-          handleFacebookAuth(resolve, reject);
-          break;
-        case 'linkedin':
-          handleLinkedInAuth(resolve, reject);
-          break;
-        default:
-          reject(new Error(`Provider ${provider.name} non supporté`));
-      }
+  const getAuthUrl = (provider: SocialProvider, state: string): string => {
+    const baseUrls = {
+      google: 'https://accounts.google.com/o/oauth2/v2/auth',
+      facebook: 'https://www.facebook.com/v18.0/dialog/oauth',
+      linkedin: 'https://www.linkedin.com/oauth/v2/authorization'
+    };
+
+    const scopes = {
+      google: 'openid email profile',
+      facebook: 'email public_profile',
+      linkedin: 'r_liteprofile r_emailaddress'
+    };
+
+    const clientIds = {
+      google: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      facebook: process.env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID,
+      linkedin: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID
+    };
+
+    const redirectUri = `${window.location.origin}/auth/${provider.name}/callback`;
+    
+    const params = new URLSearchParams({
+      client_id: clientIds[provider.type as keyof typeof clientIds] || '',
+      redirect_uri: redirectUri,
+      scope: scopes[provider.type as keyof typeof scopes] || 'email profile',
+      response_type: 'code',
+      state
     });
+
+    return `${baseUrls[provider.type as keyof typeof baseUrls]}?${params.toString()}`;
   };
 
-  const handleGoogleAuth = (resolve: (token: string) => void, reject: (error: Error) => void) => {
-    // Redirection vers Google OAuth
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId) {
-      reject(new Error('Google Client ID non configuré'));
-      return;
-    }
-    
-    const redirectUri = encodeURIComponent(`${window.location.origin}/auth/google/callback`);
-    const scope = encodeURIComponent('openid email profile');
-    const state = Math.random().toString(36).substring(7);
-    
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
-    
-    // Stocker les callbacks pour le retour
-    (window as any).googleAuthCallbacks = { resolve, reject };
-    
-    // Ouvrir popup ou rediriger
-    const popup = window.open(authUrl, 'google-auth', 'width=500,height=600');
-    
-    // Vérifier la fermeture du popup
-    const checkClosed = setInterval(() => {
-      if (popup?.closed) {
-        clearInterval(checkClosed);
-        reject(new Error('Authentification Google annulée'));
-      }
-    }, 1000);
-  };
 
-  const handleFacebookAuth = (resolve: (token: string) => void, reject: (error: Error) => void) => {
-    // Utilisation du SDK Facebook
-    if (typeof window !== 'undefined' && (window as any).FB) {
-      (window as any).FB.login((response: any) => {
-        if (response.authResponse && response.authResponse.accessToken) {
-          resolve(response.authResponse.accessToken);
-        } else {
-          reject(new Error('Échec de l\'authentification Facebook'));
-        }
-      }, { scope: 'email,public_profile' });
-    } else {
-      reject(new Error('Facebook SDK non chargé'));
-    }
-  };
-
-  const handleLinkedInAuth = (resolve: (token: string) => void, reject: (error: Error) => void) => {
-    // Redirection vers LinkedIn OAuth
-    const clientId = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
-    const redirectUri = encodeURIComponent(`${window.location.origin}/auth/linkedin/callback`);
-    const scope = encodeURIComponent('r_liteprofile r_emailaddress');
-    const state = Math.random().toString(36).substring(7);
-    
-    const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
-    
-    // Stocker les callbacks pour le retour
-    (window as any).linkedinAuthCallbacks = { resolve, reject };
-    
-    // Ouvrir popup ou rediriger
-    const popup = window.open(authUrl, 'linkedin-auth', 'width=600,height=600');
-    
-    // Vérifier la fermeture du popup
-    const checkClosed = setInterval(() => {
-      if (popup?.closed) {
-        clearInterval(checkClosed);
-        reject(new Error('Authentification LinkedIn annulée'));
-      }
-    }, 1000);
-  };
 
   const getProviderIcon = (type: string) => {
     switch (type) {
@@ -183,9 +114,9 @@ export default function SocialAuth({
 
   const getProviderColor = (type: string) => {
     switch (type) {
-      case 'google': return 'hover:border-red-300 hover:bg-red-50 text-red-600';
-      case 'facebook': return 'hover:border-blue-300 hover:bg-blue-50 text-blue-600';
-      case 'linkedin': return 'hover:border-blue-400 hover:bg-blue-50 text-blue-700';
+      case 'google': return 'hover:border-red-300 hover:bg-red-50 text-gray-700 hover:text-red-600';
+      case 'facebook': return 'hover:border-blue-300 hover:bg-blue-50 text-gray-700 hover:text-blue-600';
+      case 'linkedin': return 'hover:border-blue-400 hover:bg-blue-50 text-gray-700 hover:text-blue-700';
       default: return 'hover:border-gray-300 hover:bg-gray-50 text-gray-600';
     }
   };
@@ -195,10 +126,10 @@ export default function SocialAuth({
   }
 
   return (
-    <div>
-      <div className="relative flex items-center py-6">
+    <div className="mt-6">
+      <div className="relative flex items-center py-4">
         <div className="flex-grow border-t border-gray-300"></div>
-        <span className="flex-shrink mx-4 text-gray-500 font-medium">ou</span>
+        <span className="flex-shrink mx-4 text-gray-500 font-medium text-sm">ou continuez avec</span>
         <div className="flex-grow border-t border-gray-300"></div>
       </div>
 
@@ -208,7 +139,7 @@ export default function SocialAuth({
             key={provider.name}
             onClick={() => handleSocialAuth(provider)}
             disabled={loading === provider.name}
-            className={`flex items-center justify-center gap-2 bg-white border-2 border-gray-200 rounded-xl py-3 px-4 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${getProviderColor(provider.type)}`}
+            className={`flex items-center justify-center gap-2 bg-white border-2 border-gray-200 rounded-xl py-3 px-4 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md ${getProviderColor(provider.type)}`}
           >
             {loading === provider.name ? (
               <i className="fas fa-spinner fa-spin text-lg"></i>
@@ -222,10 +153,10 @@ export default function SocialAuth({
         ))}
       </div>
 
-      <p className="text-xs text-gray-500 text-center mt-4">
+      <p className="text-xs text-gray-500 text-center mt-4 leading-relaxed">
         {mode === 'signup' 
-          ? 'En vous inscrivant, vous acceptez nos conditions d\'utilisation'
-          : 'Connexion sécurisée avec votre compte social'
+          ? 'En vous inscrivant avec un réseau social, vous acceptez nos conditions d\'utilisation et notre politique de confidentialité.'
+          : 'Connexion rapide et sécurisée avec votre compte social'
         }
       </p>
     </div>

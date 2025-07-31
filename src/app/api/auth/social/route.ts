@@ -28,7 +28,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { provider, access_token, userType = 'donor', additionalData = {} } = body;
+    const { provider, access_token, mode = 'login', userType = 'donor', additionalData = {} } = body;
 
     if (!provider || !access_token) {
       return NextResponse.json({ 
@@ -100,43 +100,30 @@ export async function POST(request: NextRequest) {
         });
       }
     } else {
-      // Nouvel utilisateur - créer le compte avec les données pré-remplies
-      const [firstName, ...lastNameParts] = (userInfo.name || userInfo.email.split('@')[0]).split(' ');
-      const lastName = lastNameParts.join(' ') || '';
+      // Utilisateur n'existe pas
+      if (mode === 'login') {
+        // Mode connexion : ne pas créer de compte, retourner erreur
+        return NextResponse.json({ 
+          error: 'Aucun compte trouvé avec cette adresse email. Veuillez vous inscrire d\'abord.' 
+        }, { status: 404 });
+      } else {
+        // Mode inscription : retourner les données pour pré-remplir le formulaire
+        const [firstName, ...lastNameParts] = (userInfo.name || userInfo.email.split('@')[0]).split(' ');
+        const lastName = lastNameParts.join(' ') || '';
 
-      // Fusionner avec les données additionnelles du formulaire
-      const profileData = {
-        firstName: additionalData.firstName || firstName,
-        lastName: additionalData.lastName || lastName,
-        phone: additionalData.phone || null,
-        country: additionalData.country || null,
-        language: additionalData.language || 'fr',
-        avatarUrl: userInfo.picture,
-        ...additionalData.profileData
-      };
-
-      user = await prisma.user.create({
-        data: {
-          email: userInfo.email,
-          passwordHash: generateSecureToken(), // Mot de passe temporaire
-          userType,
-          isVerified: true, // Les providers sociaux vérifient l'email
-          profile: {
-            create: profileData
-          },
-          socialAccounts: {
-            create: {
-              providerId: providerConfig.id,
-              providerUserId: userInfo.id,
-              email: userInfo.email,
-              name: userInfo.name,
-              avatar: userInfo.picture,
-              accessToken: access_token
-            }
+        return NextResponse.json({
+          requiresSignup: true,
+          socialData: {
+            provider: provider,
+            providerUserId: userInfo.id,
+            email: userInfo.email,
+            firstName,
+            lastName,
+            avatar: userInfo.picture,
+            accessToken: access_token
           }
-        },
-        include: { profile: true, socialAccounts: true }
-      });
+        });
+      }
     }
 
     // Créer une session

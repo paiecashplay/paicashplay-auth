@@ -9,7 +9,7 @@ export function requireAuth(handler: (request: NextRequest, user: any) => Promis
     try {
       await ensurePrismaReady();
       
-      const sessionToken = request.cookies.get('session_token')?.value;
+      const sessionToken = request.cookies.get('session-token')?.value;
       
       if (!sessionToken) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
@@ -35,7 +35,7 @@ export function requireUserType(allowedTypes: string[]) {
       try {
         await ensurePrismaReady();
         
-        const sessionToken = request.cookies.get('session_token')?.value;
+        const sessionToken = request.cookies.get('session-token')?.value;
         
         if (!sessionToken) {
           return NextResponse.json({ error: 'Authentication required' }, { status: 401 });

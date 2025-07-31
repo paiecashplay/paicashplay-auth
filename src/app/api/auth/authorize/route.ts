@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   
   // Check if user is authenticated
   const cookieStore = await cookies();
-  const sessionToken = cookieStore.get('session_token')?.value;
+  const sessionToken = cookieStore.get('session-token')?.value;
   
   if (!sessionToken) {
     // Redirect to login with OAuth parameters
@@ -51,8 +51,59 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
   
-  // TODO: Validate session and get user ID
-  // For now, redirect to consent page
+  // Validate session and get user
+  let userId: string;
+  try {
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET!) as any;
+    userId = decoded.userId;
+  } catch (error) {
+    // Invalid session, redirect to login
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('client_id', client_id);
+    loginUrl.searchParams.set('redirect_uri', redirect_uri);
+    loginUrl.searchParams.set('scope', scope);
+    if (state) loginUrl.searchParams.set('state', state);
+    
+    return NextResponse.redirect(loginUrl);
+  }
+  
+  // Check if user has already consented to this client
+  const { prisma } = require('@/lib/prisma');
+  const existingConsent = await prisma.userConsent.findUnique({
+    where: {
+      userId_clientId: {
+        userId,
+        clientId: client.id
+      }
+    }
+  });
+  
+  if (existingConsent) {
+    // User has already consented, generate code directly
+    const { generateSecureToken } = require('@/lib/password');
+    const authCode = generateSecureToken();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    
+    await prisma.authorizationCode.create({
+      data: {
+        code: authCode,
+        clientId: client.id,
+        userId,
+        redirectUri: redirect_uri,
+        scope: scope || 'openid',
+        expiresAt
+      }
+    });
+    
+    const redirectUrl = new URL(redirect_uri);
+    redirectUrl.searchParams.set('code', authCode);
+    if (state) redirectUrl.searchParams.set('state', state);
+    
+    return NextResponse.redirect(redirectUrl);
+  }
+  
+  // Redirect to consent page
   const consentUrl = new URL('/consent', request.url);
   consentUrl.searchParams.set('client_id', client_id);
   consentUrl.searchParams.set('redirect_uri', redirect_uri);

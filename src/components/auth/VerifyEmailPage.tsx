@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
 import Logo from '@/components/ui/Logo';
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'waiting'>('waiting');
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
@@ -46,9 +46,21 @@ export default function VerifyEmailPage() {
         
         // Redirection après 3 secondes
         setTimeout(() => {
-          const redirectUrl = searchParams.get('redirect_uri');
-          if (redirectUrl) {
-            window.location.href = redirectUrl;
+          const clientId = searchParams.get('client_id');
+          const redirectUri = searchParams.get('redirect_uri');
+          const scope = searchParams.get('scope');
+          const state = searchParams.get('state');
+          
+          if (clientId && redirectUri) {
+            // OAuth flow - redirect to authorize endpoint
+            const authorizeUrl = new URL('/api/auth/authorize', window.location.origin);
+            authorizeUrl.searchParams.set('response_type', 'code');
+            authorizeUrl.searchParams.set('client_id', clientId);
+            authorizeUrl.searchParams.set('redirect_uri', redirectUri);
+            if (scope) authorizeUrl.searchParams.set('scope', scope);
+            if (state) authorizeUrl.searchParams.set('state', state);
+            
+            window.location.href = authorizeUrl.toString();
           } else {
             router.push('/login?verified=true');
           }
@@ -247,5 +259,30 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen gradient-bg flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <Logo size="lg" className="justify-center mb-6" />
+          </div>
+          <div className="card-elevated">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-paiecash/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i className="fas fa-spinner fa-spin text-paiecash text-2xl"></i>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Chargement...</h2>
+              <p className="text-gray-600">Préparation de la vérification...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

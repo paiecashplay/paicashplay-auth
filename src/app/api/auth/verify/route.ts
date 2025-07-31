@@ -28,7 +28,8 @@ export async function POST(request: NextRequest) {
           include: {
             profile: {
               select: {
-                firstName: true
+                firstName: true,
+                lastName: true
               }
             }
           }

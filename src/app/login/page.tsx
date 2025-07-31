@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Logo from '@/components/ui/Logo';
 import { useToast } from '@/components/ui/Toast';
 import SocialButtons from '@/components/ui/SocialButtons';
 
-export default function LoginPage() {
+function LoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -52,8 +52,26 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success('Connexion réussie', 'Redirection vers votre tableau de bord...');
-        setTimeout(() => router.push('/dashboard'), 1000);
+        // Check for OAuth parameters
+        const clientId = searchParams.get('client_id');
+        const redirectUri = searchParams.get('redirect_uri');
+        const scope = searchParams.get('scope');
+        const state = searchParams.get('state');
+        
+        if (clientId && redirectUri) {
+          // OAuth flow - redirect to authorize endpoint
+          const authorizeUrl = new URL('/api/auth/authorize', window.location.origin);
+          authorizeUrl.searchParams.set('response_type', 'code');
+          authorizeUrl.searchParams.set('client_id', clientId);
+          authorizeUrl.searchParams.set('redirect_uri', redirectUri);
+          if (scope) authorizeUrl.searchParams.set('scope', scope);
+          if (state) authorizeUrl.searchParams.set('state', state);
+          
+          window.location.href = authorizeUrl.toString();
+        } else {
+          toast.success('Connexion réussie', 'Redirection vers votre tableau de bord...');
+          setTimeout(() => router.push('/dashboard'), 1000);
+        }
       } else {
         toast.error('Erreur de connexion', data.error || 'Email ou mot de passe incorrect');
         setError(data.error || 'Erreur de connexion');
@@ -177,5 +195,22 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen gradient-bg flex items-center justify-center p-6">
+        <div className="card-elevated w-full max-w-md">
+          <div className="text-center py-8">
+            <i className="fas fa-spinner fa-spin text-paiecash text-2xl mb-4"></i>
+            <p className="text-gray-600">Chargement...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

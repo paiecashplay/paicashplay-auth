@@ -86,9 +86,22 @@ export default function SignupPage() {
       const data = await response.json();
       
       if (response.ok) {
-        // Success - redirect to verification page
-        const redirectUrl = data.redirectUrl || `/verify-email?email=${encodeURIComponent(formData.email)}`;
-        window.location.href = redirectUrl;
+        // Success - redirect to verification page with OAuth params
+        const verifyUrl = new URL(`/verify-email`, window.location.origin);
+        verifyUrl.searchParams.set('email', formData.email);
+        
+        // Preserve OAuth parameters
+        const clientId = new URLSearchParams(window.location.search).get('client_id');
+        const redirectUri = new URLSearchParams(window.location.search).get('redirect_uri');
+        const scope = new URLSearchParams(window.location.search).get('scope');
+        const state = new URLSearchParams(window.location.search).get('state');
+        
+        if (clientId) verifyUrl.searchParams.set('client_id', clientId);
+        if (redirectUri) verifyUrl.searchParams.set('redirect_uri', redirectUri);
+        if (scope) verifyUrl.searchParams.set('scope', scope);
+        if (state) verifyUrl.searchParams.set('state', state);
+        
+        window.location.href = verifyUrl.toString();
       } else {
         toast.error('Erreur d\'inscription', data.error || 'Une erreur est survenue lors de la création du compte');
       }
@@ -446,7 +459,7 @@ export default function SignupPage() {
                     <i className="fas fa-check-circle text-emerald-500 absolute top-3 right-3 text-lg"></i>
                   )}
                 </button>
-              ))
+              ))}
             </div>
             <button
               onClick={() => setStep(2)}

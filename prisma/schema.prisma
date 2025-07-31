@@ -28,6 +28,7 @@ model User {
   authorizationCodes AuthorizationCode[]
   accessTokens       AccessToken[]
   auditLogs          AuditLog[]
+  userConsents       UserConsent[]
 
   @@map("users")
 }
@@ -104,6 +105,7 @@ model OAuthClient {
 
   authorizationCodes AuthorizationCode[]
   accessTokens       AccessToken[]
+  userConsents       UserConsent[]
 
   @@map("oauth_clients")
 }
@@ -289,6 +291,21 @@ enum ConfigType {
   NUMBER  @map("number")
   BOOLEAN @map("boolean")
   JSON    @map("json")
+}
+
+model UserConsent {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  clientId  String   @map("client_id")
+  scopes    Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+
+  @@unique([userId, clientId])
+  @@map("user_consents")
 }
 
 enum ProviderType {

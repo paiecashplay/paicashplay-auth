@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     // Update user password
     await prisma.user.update({
       where: { id: resetToken.userId },
-      data: { password: hashedPassword }
+      data: { passwordHash: hashedPassword }
     });
     
     // Mark token as used

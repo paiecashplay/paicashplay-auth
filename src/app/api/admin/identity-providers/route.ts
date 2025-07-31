@@ -1,10 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/middleware';
 import { IdentityProviderService } from '@/lib/identity-providers';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { AdminAuthService } from '@/lib/admin-auth';
 
-export const GET = requireAdmin(async (request: NextRequest) => {
+export async function GET(request: NextRequest) {
   try {
+    // Vérifier l'authentification admin
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get('admin_session')?.value;
+    
+    if (!sessionToken) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const admin = await AdminAuthService.validateAdminSession(sessionToken);
+    if (!admin) {
+      return NextResponse.json({ error: 'Session invalide' }, { status: 401 });
+    }
+
     const providers = await prisma.identityProvider.findMany({
       orderBy: { name: 'asc' }
     });
@@ -13,10 +27,23 @@ export const GET = requireAdmin(async (request: NextRequest) => {
     console.error('Error fetching identity providers:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-});
+}
 
-export const POST = requireAdmin(async (request: NextRequest) => {
+export async function POST(request: NextRequest) {
   try {
+    // Vérifier l'authentification admin
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get('admin_session')?.value;
+    
+    if (!sessionToken) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const admin = await AdminAuthService.validateAdminSession(sessionToken);
+    if (!admin) {
+      return NextResponse.json({ error: 'Session invalide' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { name, displayName, type, clientId, clientSecret, config } = body;
 
@@ -40,4 +67,4 @@ export const POST = requireAdmin(async (request: NextRequest) => {
     console.error('Error creating identity provider:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-});
+}

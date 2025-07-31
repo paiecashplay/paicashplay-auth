@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
             }
           }
         },
-        include: { profile: true }
+        include: { profile: true, socialAccounts: true }
       });
     }
 

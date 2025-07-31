@@ -1,32 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { AdminAuthService } from '@/lib/admin-auth';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // Vérifier l'authentification admin
     const cookieStore = await cookies();
-    const adminToken = cookieStore.get('admin-token')?.value;
+    const sessionToken = cookieStore.get('admin_session')?.value;
     
-    if (!adminToken) {
+    if (!sessionToken) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    let adminId: string;
-    try {
-      const decoded = jwt.verify(adminToken, process.env.JWT_SECRET!) as any;
-      adminId = decoded.adminId;
-    } catch (error) {
-      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    const admin = await AdminAuthService.validateAdminSession(sessionToken);
+    if (!admin) {
+      return NextResponse.json({ error: 'Session invalide' }, { status: 401 });
     }
 
     // Récupérer l'utilisateur actuel
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { id: true, email: true, isActive: true }
     });
 
@@ -38,17 +36,17 @@ export async function POST(
     const newStatus = !user.isActive;
     
     const updatedUser = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: { isActive: newStatus }
     });
 
     // Log de l'action admin
     await prisma.auditLog.create({
       data: {
-        adminId,
+        adminId: admin.id,
         action: newStatus ? 'ACTIVATE_USER' : 'SUSPEND_USER',
         resourceType: 'User',
-        resourceId: params.id,
+        resourceId: id,
         oldValues: { isActive: user.isActive },
         newValues: { isActive: newStatus },
         ipAddress: request.headers.get('x-forwarded-for') || 'unknown',

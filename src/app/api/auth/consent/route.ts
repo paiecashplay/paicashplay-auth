@@ -82,23 +82,8 @@ export async function POST(request: NextRequest) {
       }
     });
     
-    // Store user consent
-    await prisma.userConsent.upsert({
-      where: {
-        userId_clientId: {
-          userId,
-          clientId: client.clientId
-        }
-      },
-      update: {
-        scopes: scope?.split(' ') || ['openid']
-      },
-      create: {
-        userId,
-        clientId: client.clientId,
-        scopes: scope?.split(' ') || ['openid']
-      }
-    });
+    // Note: User consent is tracked via authorization codes for now
+    // Future enhancement: Add UserConsent model for persistent consent tracking
     
     // Redirect with authorization code
     redirectUrl.searchParams.set('code', authCode);

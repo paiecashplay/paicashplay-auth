@@ -29,6 +29,14 @@ async function seed() {
     
     // Configurations système
     const configs = [
+      { key: 'APP_NAME', value: 'PaieCashPlay', type: 'STRING', description: 'Nom de l\'application' },
+      { key: 'APP_URL', value: 'https://auth.paiecashplay.com', type: 'STRING', description: 'URL de l\'application' },
+      { key: 'SUPPORT_EMAIL', value: 'support@paiecashplay.com', type: 'STRING', description: 'Email de support' },
+      { key: 'JWT_EXPIRY', value: '7d', type: 'STRING', description: 'Durée d\'expiration des JWT' },
+      { key: 'SESSION_EXPIRY', value: '604800', type: 'NUMBER', description: 'Durée de session en secondes (7 jours)' },
+      { key: 'PASSWORD_MIN_LENGTH', value: '8', type: 'NUMBER', description: 'Longueur minimale du mot de passe' },
+      { key: 'ENABLE_REGISTRATION', value: 'true', type: 'BOOLEAN', description: 'Autoriser les inscriptions' },
+      { key: 'ENABLE_EMAIL_VERIFICATION', value: 'true', type: 'BOOLEAN', description: 'Vérification email obligatoire' },
       { key: 'smtp_host', value: 'smtp.gmail.com', type: 'STRING', description: 'Serveur SMTP' },
       { key: 'smtp_port', value: '587', type: 'NUMBER', description: 'Port SMTP' },
       { key: 'smtp_secure', value: 'false', type: 'BOOLEAN', description: 'Connexion sécurisée SMTP' },
@@ -60,6 +68,69 @@ async function seed() {
       }
     }
     
+    // 3. Providers d'authentification sociale
+  const providers = [
+    {
+      id: 'google_provider',
+      name: 'google',
+      displayName: 'Google',
+      type: 'google',
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      isEnabled: false,
+      config: {
+        authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+        tokenUrl: 'https://oauth2.googleapis.com/token',
+        userInfoUrl: 'https://www.googleapis.com/oauth2/v2/userinfo',
+        scopes: ['openid', 'email', 'profile']
+      }
+    },
+    {
+      id: 'facebook_provider',
+      name: 'facebook',
+      displayName: 'Facebook',
+      type: 'facebook',
+      clientId: process.env.FACEBOOK_CLIENT_ID || '',
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET || '',
+      isEnabled: false,
+      config: {
+        authUrl: 'https://www.facebook.com/v18.0/dialog/oauth',
+        tokenUrl: 'https://graph.facebook.com/v18.0/oauth/access_token',
+        userInfoUrl: 'https://graph.facebook.com/me',
+        scopes: ['email', 'public_profile']
+      }
+    },
+    {
+      id: 'linkedin_provider',
+      name: 'linkedin',
+      displayName: 'LinkedIn',
+      type: 'linkedin',
+      clientId: process.env.LINKEDIN_CLIENT_ID || '',
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
+      isEnabled: false,
+      config: {
+        authUrl: 'https://www.linkedin.com/oauth/v2/authorization',
+        tokenUrl: 'https://www.linkedin.com/oauth/v2/accessToken',
+        userInfoUrl: 'https://api.linkedin.com/v2/people/~',
+        scopes: ['r_liteprofile', 'r_emailaddress']
+      }
+    }
+  ];
+
+  for (const provider of providers) {
+    await prisma.identityProvider.upsert({
+      where: { name: provider.name },
+      update: {
+        displayName: provider.displayName,
+        clientId: provider.clientId,
+        clientSecret: provider.clientSecret,
+        isEnabled: provider.isEnabled,
+        config: provider.config
+      },
+      create: provider
+    });
+  }
+
     console.log('✅ Production database seeded successfully');
     
   } catch (error) {

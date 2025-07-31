@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/middleware';
 import { IdentityProviderService } from '@/lib/identity-providers';
+import { prisma } from '@/lib/prisma';
 
 export const GET = requireAdmin(async (request: NextRequest) => {
   try {
-    const providers = await IdentityProviderService.getEnabledProviders();
+    const providers = await prisma.identityProvider.findMany({
+      orderBy: { name: 'asc' }
+    });
     return NextResponse.json({ providers });
   } catch (error) {
     console.error('Error fetching identity providers:', error);

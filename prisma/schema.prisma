@@ -3,23 +3,22 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
   relationMode = "prisma"
 }
 
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String    @map("password_hash")
-  userType     UserType  @map("user_type")
-  isVerified   Boolean   @default(false) @map("is_verified")
-  isActive     Boolean   @default(true) @map("is_active")
-  loginAttempts Int      @default(0) @map("login_attempts")
-  lockedUntil  DateTime? @map("locked_until")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  passwordHash       String              @map("password_hash")
+  userType           UserType            @map("user_type")
+  isVerified         Boolean             @default(false) @map("is_verified")
+  isActive           Boolean             @default(true) @map("is_active")
+  loginAttempts      Int                 @default(0) @map("login_attempts")
+  lockedUntil        DateTime?           @map("locked_until")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
   profile            UserProfile?
   sessions           UserSession[]
   emailVerifications EmailVerification[]
@@ -28,7 +27,6 @@ model User {
   authorizationCodes AuthorizationCode[]
   accessTokens       AccessToken[]
   auditLogs          AuditLog[]
-  userConsents       UserConsent[]
 
   @@map("users")
 }
@@ -46,8 +44,7 @@ model UserProfile {
   metadata  Json?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")
 }
@@ -60,8 +57,7 @@ model UserSession {
   userAgent    String?  @map("user_agent")
   expiresAt    DateTime @map("expires_at")
   createdAt    DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_sessions")
 }
@@ -73,8 +69,7 @@ model EmailVerification {
   expiresAt DateTime @map("expires_at")
   used      Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("email_verifications")
 }
@@ -86,59 +81,54 @@ model PasswordReset {
   expiresAt DateTime @map("expires_at")
   used      Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("password_resets")
 }
 
 model OAuthClient {
-  id            String   @id @default(cuid())
-  clientId      String   @unique @map("client_id")
-  clientSecret  String   @map("client_secret")
-  name          String
-  description   String?
-  redirectUris  Json     @map("redirect_uris")
-  allowedScopes Json     @map("allowed_scopes")
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-
+  id                 String              @id @default(cuid())
+  clientId           String              @unique @map("client_id")
+  clientSecret       String              @map("client_secret")
+  name               String
+  description        String?
+  redirectUris       Json                @map("redirect_uris")
+  allowedScopes      Json                @map("allowed_scopes")
+  isActive           Boolean             @default(true) @map("is_active")
+  createdAt          DateTime            @default(now()) @map("created_at")
   authorizationCodes AuthorizationCode[]
   accessTokens       AccessToken[]
-  userConsents       UserConsent[]
 
   @@map("oauth_clients")
 }
 
 model AuthorizationCode {
-  id                    String    @id @default(cuid())
-  code                  String    @unique
-  clientId              String    @map("client_id")
-  userId                String    @map("user_id")
-  redirectUri           String    @map("redirect_uri")
-  scope                 String?
-  codeChallenge         String?   @map("code_challenge")
-  codeChallengeMethod   String?   @map("code_challenge_method")
-  expiresAt             DateTime  @map("expires_at")
-  used                  Boolean   @default(false)
-  createdAt             DateTime  @default(now()) @map("created_at")
-
-  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  id                  String      @id @default(cuid())
+  code                String      @unique
+  clientId            String      @map("client_id")
+  userId              String      @map("user_id")
+  redirectUri         String      @map("redirect_uri")
+  scope               String?
+  codeChallenge       String?     @map("code_challenge")
+  codeChallengeMethod String?     @map("code_challenge_method")
+  expiresAt           DateTime    @map("expires_at")
+  used                Boolean     @default(false)
+  createdAt           DateTime    @default(now()) @map("created_at")
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client              OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
 
   @@map("authorization_codes")
 }
 
 model AccessToken {
-  id           String   @id @default(cuid())
-  tokenHash    String   @unique @map("token_hash")
-  clientId     String   @map("client_id")
-  userId       String   @map("user_id")
-  scope        String?
-  expiresAt    DateTime @map("expires_at")
-  revoked      Boolean  @default(false)
-  createdAt    DateTime @default(now()) @map("created_at")
-
+  id            String         @id @default(cuid())
+  tokenHash     String         @unique @map("token_hash")
+  clientId      String         @map("client_id")
+  userId        String         @map("user_id")
+  scope         String?
+  expiresAt     DateTime       @map("expires_at")
+  revoked       Boolean        @default(false)
+  createdAt     DateTime       @default(now()) @map("created_at")
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   client        OAuthClient    @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
   refreshTokens RefreshToken[]
@@ -147,29 +137,27 @@ model AccessToken {
 }
 
 model RefreshToken {
-  id            String   @id @default(cuid())
-  tokenHash     String   @unique @map("token_hash")
-  accessTokenId String   @map("access_token_id")
-  expiresAt     DateTime @map("expires_at")
-  revoked       Boolean  @default(false)
-  createdAt     DateTime @default(now()) @map("created_at")
-
-  accessToken AccessToken @relation(fields: [accessTokenId], references: [id], onDelete: Cascade)
+  id            String      @id @default(cuid())
+  tokenHash     String      @unique @map("token_hash")
+  accessTokenId String      @map("access_token_id")
+  expiresAt     DateTime    @map("expires_at")
+  revoked       Boolean     @default(false)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  accessToken   AccessToken @relation(fields: [accessTokenId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
 }
 
 model AdminUser {
-  id           String    @id @default(cuid())
-  username     String    @unique
-  passwordHash String    @map("password_hash")
-  email        String
-  fullName     String    @map("full_name")
-  isActive     Boolean   @default(true) @map("is_active")
-  lastLogin    DateTime? @map("last_login")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-
+  id            String         @id @default(cuid())
+  username      String         @unique
+  passwordHash  String         @map("password_hash")
+  email         String
+  fullName      String         @map("full_name")
+  isActive      Boolean        @default(true) @map("is_active")
+  lastLogin     DateTime?      @map("last_login")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
   logs          AdminLog[]
   configUpdates SystemConfig[]
   auditLogs     AuditLog[]
@@ -178,78 +166,74 @@ model AdminUser {
 }
 
 model SystemConfig {
-  id          String     @id @default(cuid())
-  configKey   String     @unique @map("config_key")
-  configValue String?    @map("config_value")
-  configType  ConfigType @default(STRING) @map("config_type")
-  description String?
-  isEncrypted Boolean    @default(false) @map("is_encrypted")
-  updatedBy   String?    @map("updated_by")
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @updatedAt @map("updated_at")
-
+  id             String     @id @default(cuid())
+  configKey      String     @unique @map("config_key")
+  configValue    String?    @map("config_value")
+  configType     ConfigType @default(STRING) @map("config_type")
+  description    String?
+  isEncrypted    Boolean    @default(false) @map("is_encrypted")
+  updatedBy      String?    @map("updated_by")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
   updatedByAdmin AdminUser? @relation(fields: [updatedBy], references: [id])
 
   @@map("system_configs")
 }
 
 model AuditLog {
-  id           String   @id @default(cuid())
-  userId       String?  @map("user_id")
-  adminId      String?  @map("admin_id")
+  id           String     @id @default(cuid())
+  userId       String?    @map("user_id")
+  adminId      String?    @map("admin_id")
   action       String
-  resourceType String   @map("resource_type")
-  resourceId   String?  @map("resource_id")
-  oldValues    Json?    @map("old_values")
-  newValues    Json?    @map("new_values")
-  ipAddress    String?  @map("ip_address")
-  userAgent    String?  @map("user_agent")
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  user  User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  admin AdminUser? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  resourceType String     @map("resource_type")
+  resourceId   String?    @map("resource_id")
+  oldValues    Json?      @map("old_values")
+  newValues    Json?      @map("new_values")
+  ipAddress    String?    @map("ip_address")
+  userAgent    String?    @map("user_agent")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  admin        AdminUser? @relation(fields: [adminId], references: [id], onDelete: SetNull)
 
   @@map("audit_logs")
 }
 
 model RateLimitLog {
   id        String   @id @default(cuid())
-  key       String
+  key       String   @unique
   count     Int      @default(1)
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@unique([key])
   @@map("rate_limit_logs")
 }
 
 model AdminLog {
-  id           String   @id @default(cuid())
-  adminId      String   @map("admin_id")
+  id           String    @id @default(cuid())
+  adminId      String    @map("admin_id")
   action       String
-  resourceType String   @map("resource_type")
-  resourceId   String?  @map("resource_id")
+  resourceType String    @map("resource_type")
+  resourceId   String?   @map("resource_id")
   details      Json?
-  ipAddress    String?  @map("ip_address")
-  userAgent    String?  @map("user_agent")
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  admin AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  ipAddress    String?   @map("ip_address")
+  userAgent    String?   @map("user_agent")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  admin        AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@map("admin_logs")
 }
 
 model IdentityProvider {
-  id           String   @id @default(cuid())
-  name         String   @unique
-  displayName  String   @map("display_name")
+  id           String       @id @default(cuid())
+  name         String       @unique
+  displayName  String       @map("display_name")
   type         ProviderType
-  clientId     String   @map("client_id")
-  clientSecret String   @map("client_secret")
-  isEnabled    Boolean  @default(true) @map("is_enabled")
+  clientId     String       @map("client_id")
+  clientSecret String       @map("client_secret")
+  isEnabled    Boolean      @default(true) @map("is_enabled")
   config       Json?
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
 
   socialAccounts SocialAccount[]
 
@@ -260,7 +244,7 @@ model SocialAccount {
   id         String   @id @default(cuid())
   userId     String   @map("user_id")
   providerId String   @map("provider_id")
-  providerUserId String @map("provider_user_id") @db.VarChar(100)
+  providerUserId String @map("provider_user_id") @db.VarChar(50)
   email      String?
   name       String?
   avatar     String?
@@ -273,8 +257,7 @@ model SocialAccount {
   user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   provider IdentityProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
-  @@index([providerId])
-  @@index([providerUserId])
+  @@unique([providerId, providerUserId])
   @@map("social_accounts")
 }
 
@@ -291,21 +274,6 @@ enum ConfigType {
   NUMBER  @map("number")
   BOOLEAN @map("boolean")
   JSON    @map("json")
-}
-
-model UserConsent {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  clientId  String   @map("client_id")
-  scopes    Json
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
-
-  @@unique([userId, clientId])
-  @@map("user_consents")
 }
 
 enum ProviderType {

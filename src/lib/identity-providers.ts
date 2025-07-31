@@ -44,8 +44,15 @@ export class IdentityProviderService {
     clientSecret: string;
     config?: any;
   }) {
-    return await prisma.identityProvider.create({
-      data
+    return await prisma.identityProvider.upsert({
+      where: { name: data.name },
+      update: {
+        displayName: data.displayName,
+        clientId: data.clientId,
+        clientSecret: data.clientSecret,
+        config: data.config
+      },
+      create: data
     });
   }
 

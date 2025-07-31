@@ -15,11 +15,13 @@ export function requireAuth(handler: (request: NextRequest, user: any) => Promis
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }
       
-      const user = await AuthService.validateSession(sessionToken);
+      const authResult = await AuthService.validateSession(sessionToken);
       
-      if (!user) {
+      if (!authResult.success || !authResult.user) {
         return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
       }
+      
+      const user = authResult.user;
       
       return handler(request, user);
     } catch (error) {
@@ -41,11 +43,13 @@ export function requireUserType(allowedTypes: string[]) {
           return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
         }
         
-        const user = await AuthService.validateSession(sessionToken);
+        const authResult = await AuthService.validateSession(sessionToken);
         
-        if (!user) {
+        if (!authResult.success || !authResult.user) {
           return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
         }
+        
+        const user = authResult.user;
         
         if (!allowedTypes.includes(user.userType)) {
           return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });

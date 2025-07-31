@@ -209,7 +209,28 @@ export class AuthService {
     return true;
   }
   
-  static async validateSession(sessionToken: string) {
+  static async validateSession(sessionTokenOrRequest: string | Request) {
+    let sessionToken: string | null = null;
+    
+    if (typeof sessionTokenOrRequest === 'string') {
+      sessionToken = sessionTokenOrRequest;
+    } else {
+      // Extract from cookies
+      const cookieHeader = sessionTokenOrRequest.headers.get('cookie');
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=');
+          acc[key] = value;
+          return acc;
+        }, {} as Record<string, string>);
+        sessionToken = cookies['session-token'];
+      }
+    }
+    
+    if (!sessionToken) {
+      return { success: false, user: null };
+    }
+    
     const session = await prisma.userSession.findFirst({
       where: { 
         sessionToken,
@@ -223,16 +244,20 @@ export class AuthService {
     });
     
     if (!session || !session.user || !session.user.isActive) {
-      return null;
+      return { success: false, user: null };
     }
     
     return {
-      id: session.user.id,
-      email: session.user.email,
-      userType: session.user.userType,
-      firstName: session.user.profile?.firstName,
-      lastName: session.user.profile?.lastName,
-      isVerified: session.user.isVerified
+      success: true,
+      user: {
+        id: session.user.id,
+        email: session.user.email,
+        userType: session.user.userType,
+        firstName: session.user.profile?.firstName,
+        lastName: session.user.profile?.lastName,
+        isVerified: session.user.isVerified,
+        profile: session.user.profile
+      }
     };
   }
   

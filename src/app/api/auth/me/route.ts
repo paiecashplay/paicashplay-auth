@@ -9,7 +9,10 @@ export const GET = requireAuth(async (request: NextRequest, user: any) => {
       userType: user.userType,
       firstName: user.firstName,
       lastName: user.lastName,
-      isVerified: user.isVerified
+      isVerified: user.isVerified,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      profile: user.profile
     }
   });
 });

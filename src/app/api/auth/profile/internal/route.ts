@@ -1,28 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { AuthService } from '@/lib/auth-service';
 
-// PUT - Mettre à jour le profil utilisateur (session interne)
+// PUT - Mettre à jour le profil utilisateur (interne)
 export async function PUT(request: NextRequest) {
   try {
-    // Vérifier la session utilisateur
-    const cookieStore = await cookies();
-    const sessionToken = cookieStore.get('session-token')?.value;
-    
-    if (!sessionToken) {
+    // Vérifier l'authentification
+    const authResult = await AuthService.validateSession(request);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json({ 
         error: 'Non authentifié' 
-      }, { status: 401 });
-    }
-
-    let userId: string;
-    try {
-      const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET!) as any;
-      userId = decoded.userId;
-    } catch (error) {
-      return NextResponse.json({ 
-        error: 'Session invalide' 
       }, { status: 401 });
     }
 
@@ -30,24 +17,23 @@ export async function PUT(request: NextRequest) {
     const { firstName, lastName, phone, country, language } = body;
 
     // Mettre à jour le profil
-    const updateData: any = {};
-    if (firstName !== undefined) updateData.firstName = firstName;
-    if (lastName !== undefined) updateData.lastName = lastName;
-    if (phone !== undefined) updateData.phone = phone || null;
-    if (country !== undefined) updateData.country = country || null;
-    if (language !== undefined) updateData.language = language;
-
     const updatedProfile = await prisma.userProfile.upsert({
-      where: { userId },
+      where: { userId: authResult.user.id },
       create: {
-        userId,
+        userId: authResult.user.id,
         firstName: firstName || '',
         lastName: lastName || '',
         phone: phone || null,
         country: country || null,
         language: language || 'fr'
       },
-      update: updateData
+      update: {
+        firstName: firstName || '',
+        lastName: lastName || '',
+        phone: phone || null,
+        country: country || null,
+        language: language || 'fr'
+      }
     });
 
     return NextResponse.json({
@@ -58,7 +44,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Profile update error:', error);
     return NextResponse.json({ 
-      error: 'Erreur serveur' 
+      error: 'Erreur serveur interne' 
     }, { status: 500 });
   }
 }

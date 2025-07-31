@@ -19,6 +19,7 @@ function LoginContent() {
   useEffect(() => {
     const verified = searchParams.get('verified');
     const reset = searchParams.get('reset');
+    const errorParam = searchParams.get('error');
     
     if (verified === 'true') {
       toast.success('Compte vérifié !', 'Votre compte a été activé avec succès. Vous pouvez maintenant vous connecter.');
@@ -28,11 +29,16 @@ function LoginContent() {
       toast.success('Mot de passe modifié !', 'Votre mot de passe a été mis à jour avec succès. Vous pouvez maintenant vous connecter.');
     }
     
+    if (errorParam) {
+      toast.error('Erreur d\'authentification', decodeURIComponent(errorParam));
+    }
+    
     // Nettoyer l'URL pour éviter les re-renders
-    if (verified || reset) {
+    if (verified || reset || errorParam) {
       const url = new URL(window.location.href);
       url.searchParams.delete('verified');
       url.searchParams.delete('reset');
+      url.searchParams.delete('error');
       window.history.replaceState({}, '', url.toString());
     }
   }, []);

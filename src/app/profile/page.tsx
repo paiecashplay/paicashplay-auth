@@ -20,6 +20,14 @@ interface UserProfile {
     language: string;
     avatarUrl?: string;
     isPartner: boolean;
+    metadata?: {
+      organizationName?: string;
+      companyName?: string;
+      position?: string;
+      dateOfBirth?: string;
+      siret?: string;
+      [key: string]: any;
+    };
   };
 }
 

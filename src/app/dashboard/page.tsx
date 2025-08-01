@@ -11,7 +11,7 @@ export default function DashboardPage() {
     // Check if user is authenticated with retry logic
     const checkAuth = async (retryCount = 0) => {
       try {
-        const response = await fetch('/api/profile');
+        const response = await fetch('/api/auth/check');
         if (response.ok) {
           return; // User is authenticated
         }

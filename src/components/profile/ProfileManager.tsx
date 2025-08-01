@@ -11,8 +11,9 @@ import { useToast } from '@/components/ui/Toast';
 interface UserMetadata {
   dateOfBirth?: string;
   position?: string;
-  clubName?: string;
-  federationName?: string;
+  organizationName?: string;
+  companyName?: string;
+  siret?: string;
   [key: string]: any;
 }
 
@@ -122,6 +123,7 @@ export default function ProfileManager() {
       case 'player': return { icon: 'fas fa-running', color: 'text-blue-600', bg: 'bg-blue-100' };
       case 'club': return { icon: 'fas fa-users', color: 'text-green-600', bg: 'bg-green-100' };
       case 'federation': return { icon: 'fas fa-flag', color: 'text-purple-600', bg: 'bg-purple-100' };
+      case 'company': return { icon: 'fas fa-briefcase', color: 'text-indigo-600', bg: 'bg-indigo-100' };
       default: return { icon: 'fas fa-user', color: 'text-gray-600', bg: 'bg-gray-100' };
     }
   };
@@ -132,6 +134,7 @@ export default function ProfileManager() {
       case 'player': return 'Joueur';
       case 'club': return 'Club';
       case 'federation': return 'Fédération';
+      case 'company': return 'Société';
       default: return userType;
     }
   };
@@ -198,10 +201,10 @@ export default function ProfileManager() {
             </label>
             <input
               type="text"
-              value={formData.metadata?.clubName || ''}
+              value={formData.metadata?.organizationName || ''}
               onChange={(e) => setFormData({ 
                 ...formData, 
-                metadata: { ...formData.metadata, clubName: e.target.value }
+                metadata: { ...formData.metadata, organizationName: e.target.value }
               })}
               disabled={!editing}
               className={`input-field ${!editing ? 'bg-gray-50' : ''}`}
@@ -217,10 +220,10 @@ export default function ProfileManager() {
               </label>
               <input
                 type="text"
-                value={formData.metadata?.federationName || ''}
+                value={formData.metadata?.organizationName || ''}
                 onChange={(e) => setFormData({ 
                   ...formData, 
-                  metadata: { ...formData.metadata, federationName: e.target.value }
+                  metadata: { ...formData.metadata, organizationName: e.target.value }
                 })}
                 disabled={!editing}
                 className={`input-field ${!editing ? 'bg-gray-50' : ''}`}
@@ -240,6 +243,42 @@ export default function ProfileManager() {
                 disabled={!editing}
                 className={`input-field ${!editing ? 'bg-gray-50' : ''}`}
                 placeholder="Président, Secrétaire général..."
+              />
+            </div>
+          </>
+        );
+      case 'company':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nom de la société
+              </label>
+              <input
+                type="text"
+                value={formData.metadata?.companyName || ''}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  metadata: { ...formData.metadata, companyName: e.target.value }
+                })}
+                disabled={!editing}
+                className={`input-field ${!editing ? 'bg-gray-50' : ''}`}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                SIRET (optionnel)
+              </label>
+              <input
+                type="text"
+                value={formData.metadata?.siret || ''}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  metadata: { ...formData.metadata, siret: e.target.value }
+                })}
+                disabled={!editing}
+                className={`input-field ${!editing ? 'bg-gray-50' : ''}`}
+                placeholder="Numéro SIRET"
               />
             </div>
           </>

@@ -52,10 +52,10 @@ export async function POST(request: NextRequest) {
     
     // Set session cookie
     const cookieStore = await cookies();
-    cookieStore.set('session_token', sessionToken, {
+    cookieStore.set('session-token', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60, // 7 days
       path: '/'
     });

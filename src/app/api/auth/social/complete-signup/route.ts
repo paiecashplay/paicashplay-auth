@@ -45,7 +45,12 @@ export async function POST(request: NextRequest) {
       country: additionalData.country || null,
       language: additionalData.language || 'fr',
       avatarUrl: socialData.avatar,
-      ...additionalData.profileData
+      isPartner: additionalData.profileData?.isPartner || false,
+      metadata: additionalData.profileData ? {
+        position: additionalData.profileData.position,
+        dateOfBirth: additionalData.profileData.dateOfBirth,
+        ...additionalData.profileData
+      } : null
     };
 
     const user = await prisma.user.create({

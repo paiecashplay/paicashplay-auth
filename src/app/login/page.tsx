@@ -17,13 +17,8 @@ function LoginContent() {
   const toast = useToast();
 
   useEffect(() => {
-    const verified = searchParams.get('verified');
     const reset = searchParams.get('reset');
     const errorParam = searchParams.get('error');
-    
-    if (verified === 'true') {
-      toast.success('Compte vérifié !', 'Votre compte a été activé avec succès. Vous pouvez maintenant vous connecter.');
-    }
     
     if (reset === 'success') {
       toast.success('Mot de passe modifié !', 'Votre mot de passe a été mis à jour avec succès. Vous pouvez maintenant vous connecter.');
@@ -34,9 +29,8 @@ function LoginContent() {
     }
     
     // Nettoyer l'URL pour éviter les re-renders
-    if (verified || reset || errorParam) {
+    if (reset || errorParam) {
       const url = new URL(window.location.href);
-      url.searchParams.delete('verified');
       url.searchParams.delete('reset');
       url.searchParams.delete('error');
       window.history.replaceState({}, '', url.toString());
@@ -76,7 +70,8 @@ function LoginContent() {
           window.location.href = authorizeUrl.toString();
         } else {
           toast.success('Connexion réussie', 'Redirection vers votre tableau de bord...');
-          setTimeout(() => router.push('/dashboard'), 1000);
+          // Redirection immédiate pour éviter les problèmes de timing
+          router.push('/dashboard');
         }
       } else {
         toast.error('Erreur de connexion', data.error || 'Email ou mot de passe incorrect');

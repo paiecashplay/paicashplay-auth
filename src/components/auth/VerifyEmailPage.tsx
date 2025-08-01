@@ -20,13 +20,17 @@ function VerifyEmailContent() {
     const emailParam = searchParams.get('email');
     
     if (emailParam) {
-      setEmail(emailParam);
+      setEmail(decodeURIComponent(emailParam));
     }
 
     if (token) {
       verifyEmail(token);
     }
   }, [searchParams]);
+
+  // Permettre à l'utilisateur de saisir son email s'il n'est pas dans l'URL
+  const [manualEmail, setManualEmail] = useState('');
+  const effectiveEmail = email || manualEmail;
 
   const verifyEmail = async (token: string) => {
     setStatus('loading');
@@ -62,7 +66,7 @@ function VerifyEmailContent() {
             
             window.location.href = authorizeUrl.toString();
           } else {
-            router.push('/login?verified=true');
+            router.push('/login');
           }
         }, 3000);
       } else {
@@ -89,8 +93,8 @@ function VerifyEmailContent() {
   };
 
   const resendVerification = async () => {
-    if (!email) {
-      toast.error('Email manquant', 'Impossible de renvoyer le lien de vérification');
+    if (!effectiveEmail) {
+      toast.error('Email manquant', 'Veuillez saisir votre adresse email');
       return;
     }
 
@@ -100,14 +104,18 @@ function VerifyEmailContent() {
       const response = await fetch('/api/auth/resend-verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email: effectiveEmail })
       });
 
       if (response.ok) {
         toast.success('Email envoyé !', 'Un nouveau lien de vérification a été envoyé');
         startCountdown();
+        if (!email && manualEmail) {
+          setEmail(manualEmail); // Sauvegarder l'email saisi
+        }
       } else {
-        toast.error('Erreur', 'Impossible d\'envoyer le lien de vérification');
+        const data = await response.json();
+        toast.error('Erreur', data.error || 'Impossible d\'envoyer le lien de vérification');
       }
     } catch (error) {
       toast.error('Erreur de connexion', 'Veuillez réessayer plus tard');
@@ -134,15 +142,28 @@ function VerifyEmailContent() {
                 Nous avons envoyé un lien de vérification à votre adresse email.
                 Cliquez sur le lien dans l'email pour activer votre compte.
               </p>
-              {email && (
+              {!effectiveEmail ? (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Adresse email
+                  </label>
+                  <input
+                    type="email"
+                    value={manualEmail}
+                    onChange={(e) => setManualEmail(e.target.value)}
+                    className="input-field"
+                    placeholder="votre@email.com"
+                  />
+                </div>
+              ) : (
                 <div className="bg-paiecash/5 border border-paiecash/20 rounded-lg p-4 mb-6">
                   <p className="text-sm text-gray-700">Email envoyé à :</p>
-                  <p className="font-medium text-paiecash">{email}</p>
+                  <p className="font-medium text-paiecash">{effectiveEmail}</p>
                 </div>
               )}
               <button
                 onClick={resendVerification}
-                disabled={resendLoading || !email || countdown > 0}
+                disabled={resendLoading || !effectiveEmail || countdown > 0}
                 className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
                 {resendLoading ? (
@@ -203,7 +224,7 @@ function VerifyEmailContent() {
               <div className="space-y-3">
                 <button
                   onClick={resendVerification}
-                  disabled={resendLoading || !email || countdown > 0}
+                  disabled={resendLoading || !effectiveEmail || countdown > 0}
                   className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {resendLoading ? (
@@ -239,7 +260,7 @@ function VerifyEmailContent() {
           <p>Vous n'avez pas reçu l'email ? Vérifiez vos spams ou</p>
           <button
             onClick={resendVerification}
-            disabled={resendLoading || !email || countdown > 0}
+            disabled={resendLoading || !effectiveEmail || countdown > 0}
             className="text-paiecash hover:text-paiecash-dark font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {resendLoading ? (

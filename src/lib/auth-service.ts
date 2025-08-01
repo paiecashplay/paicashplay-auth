@@ -158,8 +158,8 @@ export class AuthService {
       data: {
         userId: user.id,
         sessionToken,
-        ipAddress,
-        userAgent,
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
         expiresAt
       }
     });

@@ -93,6 +93,7 @@ export default function SignupPage() {
           metadata.organizationName = formData.clubName;
         } else if (formData.userType === 'federation') {
           metadata.organizationName = formData.federationName;
+          metadata.position = formData.position;
         } else if (formData.userType === 'player') {
           metadata.position = formData.position;
           metadata.dateOfBirth = formData.dateOfBirth;
@@ -173,6 +174,7 @@ export default function SignupPage() {
         metadata.organizationName = formData.clubName;
       } else if (formData.userType === 'federation') {
         metadata.organizationName = formData.federationName;
+        metadata.position = formData.position;
       } else if (formData.userType === 'player') {
         metadata.position = formData.position;
         metadata.dateOfBirth = formData.dateOfBirth;
@@ -198,7 +200,7 @@ export default function SignupPage() {
 
       if (response.ok) {
         toast.success('Inscription réussie', 'Vérifiez votre email pour activer votre compte');
-        setTimeout(() => router.push('/verify-email'), 1500);
+        setTimeout(() => router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`), 1500);
       } else {
         toast.error('Erreur d\'inscription', data.error || 'Impossible de créer le compte');
         setError(data.error || 'Erreur lors de l\'inscription');

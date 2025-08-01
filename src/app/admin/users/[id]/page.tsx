@@ -17,6 +17,14 @@ interface User {
     lastName: string;
     phone?: string;
     country?: string;
+    metadata?: {
+      organizationName?: string;
+      companyName?: string;
+      position?: string;
+      dateOfBirth?: string;
+      siret?: string;
+      [key: string]: any;
+    };
   };
   sessions: Array<{
     id: string;
@@ -343,6 +351,107 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                   </label>
                 </div>
               </div>
+
+              {/* Informations spécifiques par type d'utilisateur */}
+              {user.profile?.metadata && (
+                <div className="pt-6 border-t border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    {user.userType === 'federation' && 'Informations Fédération'}
+                    {user.userType === 'club' && 'Informations Club'}
+                    {user.userType === 'player' && 'Informations Licencié'}
+                    {user.userType === 'company' && 'Informations Société'}
+                  </h3>
+                  <div className="space-y-4">
+                    {/* Fédération */}
+                    {user.userType === 'federation' && user.profile.metadata.organizationName && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          <i className="fas fa-flag mr-2 text-paiecash"></i>
+                          Nom de la fédération
+                        </label>
+                        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                          {user.profile.metadata.organizationName}
+                        </div>
+                      </div>
+                    )}
+                    {user.userType === 'federation' && user.profile.metadata.position && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          <i className="fas fa-briefcase mr-2 text-paiecash"></i>
+                          Fonction
+                        </label>
+                        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                          {user.profile.metadata.position}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Club */}
+                    {user.userType === 'club' && user.profile.metadata.organizationName && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          <i className="fas fa-users mr-2 text-paiecash"></i>
+                          Nom du club
+                        </label>
+                        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                          {user.profile.metadata.organizationName}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Licencié */}
+                    {user.userType === 'player' && user.profile.metadata.position && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          <i className="fas fa-running mr-2 text-paiecash"></i>
+                          Position
+                        </label>
+                        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                          {user.profile.metadata.position === 'goalkeeper' && 'Gardien'}
+                          {user.profile.metadata.position === 'defender' && 'Défenseur'}
+                          {user.profile.metadata.position === 'midfielder' && 'Milieu'}
+                          {user.profile.metadata.position === 'forward' && 'Attaquant'}
+                        </div>
+                      </div>
+                    )}
+                    {user.userType === 'player' && user.profile.metadata.dateOfBirth && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          <i className="fas fa-calendar mr-2 text-paiecash"></i>
+                          Date de naissance
+                        </label>
+                        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                          {new Date(user.profile.metadata.dateOfBirth).toLocaleDateString('fr-FR')}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Société */}
+                    {user.userType === 'company' && user.profile.metadata.companyName && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          <i className="fas fa-briefcase mr-2 text-paiecash"></i>
+                          Nom de la société
+                        </label>
+                        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                          {user.profile.metadata.companyName}
+                        </div>
+                      </div>
+                    )}
+                    {user.userType === 'company' && user.profile.metadata.siret && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          <i className="fas fa-id-card mr-2 text-paiecash"></i>
+                          SIRET
+                        </label>
+                        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                          {user.profile.metadata.siret}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Bouton de sauvegarde */}
               <div className="pt-6 border-t border-gray-200">

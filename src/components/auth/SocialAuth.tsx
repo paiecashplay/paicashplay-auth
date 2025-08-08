@@ -14,6 +14,12 @@ interface SocialAuthProps {
   mode: 'login' | 'signup';
   userType?: string;
   additionalData?: any;
+  oauthParams?: {
+    client_id?: string;
+    redirect_uri?: string;
+    scope?: string;
+    state?: string;
+  };
   onSuccess?: (user: any) => void;
   onError?: (error: string) => void;
 }
@@ -21,7 +27,8 @@ interface SocialAuthProps {
 export default function SocialAuth({ 
   mode, 
   userType = 'donor', 
-  additionalData = {}, 
+  additionalData = {},
+  oauthParams,
   onSuccess, 
   onError 
 }: SocialAuthProps) {
@@ -55,6 +62,7 @@ export default function SocialAuth({
         mode,
         userType,
         additionalData,
+        oauthParams,
         timestamp: Date.now()
       }));
 

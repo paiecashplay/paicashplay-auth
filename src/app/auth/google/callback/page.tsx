@@ -29,6 +29,7 @@ function GoogleCallbackContent() {
         let stateData;
         try {
           stateData = JSON.parse(atob(state));
+
         } catch {
           throw new Error('État invalide');
         }
@@ -46,6 +47,7 @@ function GoogleCallbackContent() {
 
         const data = await response.json();
 
+        console.log("Response ",data)
         if (response.ok) {
           if (data.requiresSignup) {
             // Rediriger vers signup avec les données pré-remplies
@@ -54,37 +56,17 @@ function GoogleCallbackContent() {
               socialData: JSON.stringify(data.socialData)
             });
             
-            // Préserver les paramètres OAuth s'ils existent
-            const originalParams = new URLSearchParams(window.location.search);
-            const clientId = originalParams.get('client_id');
-            const redirectUri = originalParams.get('redirect_uri');
-            const scope = originalParams.get('scope');
-            const oauthState = originalParams.get('state');
-            
-            if (clientId) params.set('client_id', clientId);
-            if (redirectUri) params.set('redirect_uri', redirectUri);
-            if (scope) params.set('scope', scope);
-            if (oauthState) params.set('oauth_state', oauthState);
+            // Préserver la session OAuth si elle existe
+            if (stateData.oauthSession) {
+              params.set('oauth_session', stateData.oauthSession);
+            }
             
             window.location.href = `/signup?${params.toString()}`;
           } else {
-            // Connexion réussie - vérifier s'il y a des paramètres OAuth
-            const originalParams = new URLSearchParams(window.location.search);
-            const clientId = originalParams.get('client_id');
-            const redirectUri = originalParams.get('redirect_uri');
-            const scope = originalParams.get('scope');
-            const oauthState = originalParams.get('state');
-            
-            if (clientId && redirectUri) {
-              // Flux OAuth - rediriger vers l'endpoint d'autorisation
-              const authorizeUrl = new URL('/api/auth/authorize', window.location.origin);
-              authorizeUrl.searchParams.set('response_type', 'code');
-              authorizeUrl.searchParams.set('client_id', clientId);
-              authorizeUrl.searchParams.set('redirect_uri', redirectUri);
-              if (scope) authorizeUrl.searchParams.set('scope', scope);
-              if (oauthState) authorizeUrl.searchParams.set('state', oauthState);
-              
-              window.location.href = authorizeUrl.toString();
+            // Connexion réussie - vérifier s'il y a une session OAuth
+            if (stateData.oauthSession) {
+              // Flux OAuth - rediriger vers l'endpoint continue
+              window.location.href = `/api/auth/continue?oauth_session=${stateData.oauthSession}`;
             } else {
               // Connexion directe - rediriger vers le dashboard
               window.location.href = '/dashboard';

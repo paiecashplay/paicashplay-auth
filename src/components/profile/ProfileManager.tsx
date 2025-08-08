@@ -6,6 +6,8 @@ import Logo from '@/components/ui/Logo';
 import CountrySelect from '@/components/ui/CountrySelect';
 import PhoneInput from '@/components/ui/PhoneInput';
 import DatePicker from '@/components/ui/DatePicker';
+import ClubSelect from '@/components/ui/ClubSelect';
+import FederationSelect from '@/components/ui/FederationSelect';
 import { useToast } from '@/components/ui/Toast';
 
 interface UserMetadata {
@@ -14,6 +16,10 @@ interface UserMetadata {
   organizationName?: string;
   companyName?: string;
   siret?: string;
+  activityType?: string;
+  platform?: string;
+  club?: string;
+  federation?: string;
   [key: string]: any;
 }
 
@@ -124,6 +130,7 @@ export default function ProfileManager() {
       case 'club': return { icon: 'fas fa-users', color: 'text-green-600', bg: 'bg-green-100' };
       case 'federation': return { icon: 'fas fa-flag', color: 'text-purple-600', bg: 'bg-purple-100' };
       case 'company': return { icon: 'fas fa-briefcase', color: 'text-indigo-600', bg: 'bg-indigo-100' };
+      case 'affiliate': return { icon: 'fas fa-bullhorn', color: 'text-orange-600', bg: 'bg-orange-100' };
       default: return { icon: 'fas fa-user', color: 'text-gray-600', bg: 'bg-gray-100' };
     }
   };
@@ -135,6 +142,7 @@ export default function ProfileManager() {
       case 'club': return 'Club';
       case 'federation': return 'Fédération';
       case 'company': return 'Société';
+      case 'affiliate': return 'Associé vendeur';
       default: return userType;
     }
   };
@@ -191,25 +199,71 @@ export default function ProfileManager() {
                 <option value="forward">Attaquant</option>
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Club
+              </label>
+              {editing ? (
+                <ClubSelect
+                  value={formData.metadata?.club || ''}
+                  onChange={(club) => setFormData({ 
+                    ...formData, 
+                    metadata: { ...formData.metadata, club }
+                  })}
+                  placeholder="Sélectionnez votre club"
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={formData.metadata?.club || 'Non renseigné'}
+                  disabled
+                  className="input-field bg-gray-50"
+                />
+              )}
+            </div>
           </>
         );
       case 'club':
         return (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nom du club
-            </label>
-            <input
-              type="text"
-              value={formData.metadata?.organizationName || ''}
-              onChange={(e) => setFormData({ 
-                ...formData, 
-                metadata: { ...formData.metadata, organizationName: e.target.value }
-              })}
-              disabled={!editing}
-              className={`input-field ${!editing ? 'bg-gray-50' : ''}`}
-            />
-          </div>
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nom du club
+              </label>
+              <input
+                type="text"
+                value={formData.metadata?.organizationName || ''}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  metadata: { ...formData.metadata, organizationName: e.target.value }
+                })}
+                disabled={!editing}
+                className={`input-field ${!editing ? 'bg-gray-50' : ''}`}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Fédération
+              </label>
+              {editing ? (
+                <FederationSelect
+                  value={formData.metadata?.federation || ''}
+                  onChange={(federation) => setFormData({ 
+                    ...formData, 
+                    metadata: { ...formData.metadata, federation }
+                  })}
+                  placeholder="Sélectionnez votre fédération"
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={formData.metadata?.federation || 'Non renseigné'}
+                  disabled
+                  className="input-field bg-gray-50"
+                />
+              )}
+            </div>
+          </>
         );
       case 'federation':
         return (
@@ -279,6 +333,50 @@ export default function ProfileManager() {
                 disabled={!editing}
                 className={`input-field ${!editing ? 'bg-gray-50' : ''}`}
                 placeholder="Numéro SIRET"
+              />
+            </div>
+          </>
+        );
+      case 'affiliate':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Type d'activité
+              </label>
+              <select
+                value={formData.metadata?.activityType || ''}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  metadata: { ...formData.metadata, activityType: e.target.value }
+                })}
+                disabled={!editing}
+                className={`input-field ${!editing ? 'bg-gray-50' : ''}`}
+              >
+                <option value="">Sélectionnez votre activité</option>
+                <option value="influencer">Influenceur</option>
+                <option value="content_creator">Créateur de contenu</option>
+                <option value="blogger">Blogueur</option>
+                <option value="youtuber">YouTuber</option>
+                <option value="podcaster">Podcaster</option>
+                <option value="community_manager">Community Manager</option>
+                <option value="other">Autre</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Plateforme principale
+              </label>
+              <input
+                type="text"
+                value={formData.metadata?.platform || ''}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  metadata: { ...formData.metadata, platform: e.target.value }
+                })}
+                disabled={!editing}
+                className={`input-field ${!editing ? 'bg-gray-50' : ''}`}
+                placeholder="Instagram, YouTube, TikTok, Blog..."
               />
             </div>
           </>

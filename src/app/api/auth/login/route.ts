@@ -44,21 +44,45 @@ export async function POST(request: NextRequest) {
     }
     
     // Login user
-    const { user, sessionToken } = await AuthService.loginUser(
+    const { user } = await AuthService.loginUser(
       { email: email.toLowerCase().trim(), password }, 
       ipAddress, 
       userAgent
     );
     
+    // Generate JWT session token
+    const jwt = require('jsonwebtoken');
+    const sessionToken = jwt.sign(
+      { userId: user.id, email: user.email },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+    
+    // Create session in database
+    const { prisma } = require('@/lib/prisma');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    
+    await prisma.userSession.create({
+      data: {
+        userId: user.id,
+        sessionToken,
+        expiresAt,
+        ipAddress,
+        userAgent
+      }
+    });
+    
     // Set session cookie
     const cookieStore = await cookies();
-    cookieStore.set('session-token', sessionToken, {
+    cookieStore.set('session_token', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60, // 7 days
       path: '/'
     });
+    
+
     
     const response = NextResponse.json({
       success: true,

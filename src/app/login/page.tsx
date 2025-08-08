@@ -15,6 +15,8 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
+  
+
 
   useEffect(() => {
     const reset = searchParams.get('reset');
@@ -52,26 +54,16 @@ function LoginContent() {
       const data = await response.json();
 
       if (response.ok) {
-        // Check for OAuth parameters
-        const clientId = searchParams.get('client_id');
-        const redirectUri = searchParams.get('redirect_uri');
-        const scope = searchParams.get('scope');
-        const state = searchParams.get('state');
+        // Check for OAuth session
+        const oauthSession = searchParams.get('oauth_session');
         
-        if (clientId && redirectUri) {
-          // OAuth flow - redirect to authorize endpoint
-          const authorizeUrl = new URL('/api/auth/authorize', window.location.origin);
-          authorizeUrl.searchParams.set('response_type', 'code');
-          authorizeUrl.searchParams.set('client_id', clientId);
-          authorizeUrl.searchParams.set('redirect_uri', redirectUri);
-          if (scope) authorizeUrl.searchParams.set('scope', scope);
-          if (state) authorizeUrl.searchParams.set('state', state);
-          
-          window.location.href = authorizeUrl.toString();
+        if (oauthSession) {
+          // OAuth flow - redirect to continue endpoint
+          window.location.replace(`/api/auth/continue?oauth_session=${oauthSession}`);
         } else {
+          // Normal login - redirect to dashboard
           toast.success('Connexion réussie', 'Redirection vers votre tableau de bord...');
-          // Redirection immédiate pour éviter les problèmes de timing
-          router.push('/dashboard');
+          window.location.replace('/dashboard');
         }
       } else {
         toast.error('Erreur de connexion', data.error || 'Email ou mot de passe incorrect');
@@ -171,7 +163,10 @@ function LoginContent() {
             </button>
           </form>
 
-          <SocialButtons mode="login" />
+          <SocialButtons 
+            mode="login" 
+            oauthSession={searchParams.get('oauth_session') || undefined}
+          />
 
           {/* Links */}
           <div className="mt-6 pt-6 border-t border-gray-200 text-center space-y-3">

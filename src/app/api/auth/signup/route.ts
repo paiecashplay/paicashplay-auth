@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    if (!['donor', 'federation', 'club', 'player', 'company'].includes(userType)) {
+    if (!['donor', 'federation', 'club', 'player', 'company', 'affiliate'].includes(userType)) {
       return NextResponse.json({ 
         error: 'Invalid user type' 
       }, { status: 400 });

@@ -344,6 +344,17 @@ function ProfileContent() {
                           </div>
                         </div>
                       )}
+                      {user.userType === 'club' && user.profile.metadata.federation && (
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <i className="fas fa-flag mr-2 text-paiecash"></i>
+                            Fédération
+                          </label>
+                          <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                            {user.profile.metadata.federation}
+                          </div>
+                        </div>
+                      )}
                       
                       {/* Licencié */}
                       {user.userType === 'player' && user.profile.metadata.position && (
@@ -368,6 +379,17 @@ function ProfileContent() {
                           </label>
                           <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
                             {new Date(user.profile.metadata.dateOfBirth).toLocaleDateString('fr-FR')}
+                          </div>
+                        </div>
+                      )}
+                      {user.userType === 'player' && user.profile.metadata.club && (
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <i className="fas fa-users mr-2 text-paiecash"></i>
+                            Club
+                          </label>
+                          <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                            {user.profile.metadata.club}
                           </div>
                         </div>
                       )}

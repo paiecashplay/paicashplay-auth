@@ -8,13 +8,16 @@ import CountrySelect from '@/components/ui/CountrySelect';
 import PhoneInput from '@/components/ui/PhoneInput';
 import DatePicker from '@/components/ui/DatePicker';
 import SocialButtons from '@/components/ui/SocialButtons';
+import ClubSelect from '@/components/ui/ClubSelect';
+import FederationSelect from '@/components/ui/FederationSelect';
 
 const USER_TYPES = [
   { value: 'donor', label: 'Donateur', icon: 'fas fa-heart', color: 'text-red-600', bg: 'bg-red-100' },
   { value: 'player', label: 'Licencié', icon: 'fas fa-running', color: 'text-blue-600', bg: 'bg-blue-100' },
   { value: 'club', label: 'Club', icon: 'fas fa-users', color: 'text-green-600', bg: 'bg-green-100' },
   { value: 'federation', label: 'Fédération', icon: 'fas fa-flag', color: 'text-purple-600', bg: 'bg-purple-100' },
-  { value: 'company', label: 'Société', icon: 'fas fa-briefcase', color: 'text-blue-600', bg: 'bg-blue-100' }
+  { value: 'company', label: 'Société', icon: 'fas fa-briefcase', color: 'text-indigo-600', bg: 'bg-indigo-100' },
+  { value: 'affiliate', label: 'Associé vendeur', icon: 'fas fa-bullhorn', color: 'text-orange-600', bg: 'bg-orange-100' }
 ];
 
 export default function SignupPage() {
@@ -91,12 +94,17 @@ export default function SignupPage() {
           metadata.siret = formData.position;
         } else if (formData.userType === 'club') {
           metadata.organizationName = formData.clubName;
+          metadata.federation = formData.federationName;
         } else if (formData.userType === 'federation') {
           metadata.organizationName = formData.federationName;
           metadata.position = formData.position;
         } else if (formData.userType === 'player') {
           metadata.position = formData.position;
           metadata.dateOfBirth = formData.dateOfBirth;
+          metadata.club = formData.clubName;
+        } else if (formData.userType === 'affiliate') {
+          metadata.activityType = formData.position;
+          metadata.platform = formData.organizationName;
         }
 
         const response = await fetch('/api/auth/social/complete-signup', {
@@ -172,12 +180,17 @@ export default function SignupPage() {
         metadata.siret = formData.position; // Using position field for SIRET
       } else if (formData.userType === 'club') {
         metadata.organizationName = formData.clubName;
+        metadata.federation = formData.federationName;
       } else if (formData.userType === 'federation') {
         metadata.organizationName = formData.federationName;
         metadata.position = formData.position;
       } else if (formData.userType === 'player') {
         metadata.position = formData.position;
         metadata.dateOfBirth = formData.dateOfBirth;
+        metadata.club = formData.clubName;
+      } else if (formData.userType === 'affiliate') {
+        metadata.activityType = formData.position;
+        metadata.platform = formData.organizationName;
       }
 
       const response = await fetch('/api/auth/signup', {
@@ -231,11 +244,12 @@ export default function SignupPage() {
                 <i className="fas fa-user-tag mr-2 text-paiecash"></i>
                 Type de compte
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              {/* Desktop version */}
+              <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                 {USER_TYPES.map((type) => (
                   <label
                     key={type.value}
-                    className={`relative flex flex-col items-center p-6 border-2 rounded-xl cursor-pointer transition-all hover:scale-105 ${
+                    className={`relative flex flex-col items-center p-4 border-2 rounded-xl cursor-pointer transition-all hover:scale-105 ${
                       formData.userType === type.value
                         ? 'border-paiecash bg-paiecash/5 shadow-lg'
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
@@ -249,17 +263,45 @@ export default function SignupPage() {
                       onChange={(e) => setFormData({ ...formData, userType: e.target.value })}
                       className="sr-only"
                     />
-                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-3 ${type.bg} shadow-sm`}>
-                      <i className={`${type.icon} text-xl ${type.color}`}></i>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-2 ${type.bg} shadow-sm`}>
+                      <i className={`${type.icon} text-lg ${type.color}`}></i>
                     </div>
                     <div className="text-center">
-                      <div className="font-semibold text-gray-900 text-sm leading-tight">{type.label}</div>
+                      <div className="font-semibold text-gray-900 text-xs leading-tight">{type.label}</div>
                     </div>
                     {formData.userType === type.value && (
-                      <i className="fas fa-check-circle text-paiecash absolute top-3 right-3 text-lg"></i>
+                      <i className="fas fa-check-circle text-paiecash absolute top-2 right-2 text-sm"></i>
                     )}
                   </label>
                 ))}
+              </div>
+              
+              {/* Mobile version - Dropdown */}
+              <div className="sm:hidden">
+                <select
+                  value={formData.userType}
+                  onChange={(e) => setFormData({ ...formData, userType: e.target.value })}
+                  className="input-field text-base"
+                >
+                  <option value="">Sélectionnez votre type de compte</option>
+                  {USER_TYPES.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+                {formData.userType && (
+                  <div className="mt-3 p-3 bg-paiecash/5 border border-paiecash/20 rounded-lg">
+                    <div className="flex items-center">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${USER_TYPES.find(t => t.value === formData.userType)?.bg} shadow-sm`}>
+                        <i className={`${USER_TYPES.find(t => t.value === formData.userType)?.icon} text-sm ${USER_TYPES.find(t => t.value === formData.userType)?.color}`}></i>
+                      </div>
+                      <span className="font-medium text-paiecash">
+                        {USER_TYPES.find(t => t.value === formData.userType)?.label}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -358,22 +400,34 @@ export default function SignupPage() {
                         placeholder="1 23 45 67 89"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-3">
-                        Position <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        value={formData.position}
-                        onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                        className="input-field"
-                        required
-                      >
-                        <option value="">Sélectionnez une position</option>
-                        <option value="goalkeeper">Gardien</option>
-                        <option value="defender">Défenseur</option>
-                        <option value="midfielder">Milieu</option>
-                        <option value="forward">Attaquant</option>
-                      </select>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Position <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={formData.position}
+                          onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                          className="input-field"
+                          required
+                        >
+                          <option value="">Sélectionnez une position</option>
+                          <option value="goalkeeper">Gardien</option>
+                          <option value="defender">Défenseur</option>
+                          <option value="midfielder">Milieu</option>
+                          <option value="forward">Attaquant</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Club (optionnel)
+                        </label>
+                        <ClubSelect
+                          value={formData.clubName}
+                          onChange={(club) => setFormData({ ...formData, clubName: club })}
+                          placeholder="Sélectionnez votre club"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -441,6 +495,16 @@ export default function SignupPage() {
                         value={formData.country}
                         onChange={(country) => setFormData({ ...formData, country })}
                         placeholder="Sélectionnez un pays"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Fédération (optionnel)
+                      </label>
+                      <FederationSelect
+                        value={formData.federationName}
+                        onChange={(federation) => setFormData({ ...formData, federationName: federation })}
+                        placeholder="Sélectionnez votre fédération"
                       />
                     </div>
                   </div>
@@ -610,6 +674,96 @@ export default function SignupPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Affiliate Fields */}
+                {formData.userType === 'affiliate' && (
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Prénom <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.firstName}
+                          onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                          className="input-field"
+                          placeholder="Votre prénom"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Nom <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.lastName}
+                          onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                          className="input-field"
+                          placeholder="Votre nom"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Type d'activité <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={formData.position}
+                        onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                        className="input-field"
+                        required
+                      >
+                        <option value="">Sélectionnez votre activité</option>
+                        <option value="influencer">Influenceur</option>
+                        <option value="content_creator">Créateur de contenu</option>
+                        <option value="blogger">Blogueur</option>
+                        <option value="youtuber">YouTuber</option>
+                        <option value="podcaster">Podcaster</option>
+                        <option value="community_manager">Community Manager</option>
+                        <option value="other">Autre</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Plateforme principale <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.organizationName}
+                        onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
+                        className="input-field"
+                        placeholder="Instagram, YouTube, TikTok, Blog..."
+                        required
+                      />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Téléphone <span className="text-red-500">*</span>
+                        </label>
+                        <PhoneInput
+                          value={formData.phone}
+                          onChange={(phone) => setFormData({ ...formData, phone })}
+                          placeholder="1 23 45 67 89"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Pays <span className="text-red-500">*</span>
+                        </label>
+                        <CountrySelect
+                          value={formData.country}
+                          onChange={(country) => setFormData({ ...formData, country })}
+                          placeholder="Sélectionnez un pays"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -750,6 +904,7 @@ export default function SignupPage() {
               {formData.userType === 'club' && 'Compte Club'}
               {formData.userType === 'federation' && 'Compte Fédération'}
               {formData.userType === 'company' && 'Compte Société'}
+              {formData.userType === 'affiliate' && 'Compte Associé vendeur'}
             </h3>
             <p className="text-sm text-gray-600">
               {formData.userType === 'donor' && 'Accès aux fonctionnalités de donation et suivi des contributions.'}
@@ -757,6 +912,7 @@ export default function SignupPage() {
               {formData.userType === 'club' && 'Gestion des joueurs, équipes et administration du club.'}
               {formData.userType === 'federation' && 'Administration des clubs, compétitions et réglementation.'}
               {formData.userType === 'company' && 'Accès aux fonctionnalités de sponsoring d\'entreprise et partenariats.'}
+              {formData.userType === 'affiliate' && 'Vente de billets d\'événements, commissions sur les ventes et outils de promotion.'}
             </p>
           </div>
         )}

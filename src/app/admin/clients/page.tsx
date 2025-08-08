@@ -21,6 +21,9 @@ export default function AdminClients() {
   const [clients, setClients] = useState<OAuthClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingClient, setEditingClient] = useState<OAuthClient | null>(null);
+  const [updating, setUpdating] = useState(false);
   const [newClient, setNewClient] = useState({
     name: '',
     description: '',
@@ -74,6 +77,68 @@ export default function AdminClients() {
     } catch (error) {
       console.error('Error creating client:', error);
       toast.error('Erreur de connexion', 'Impossible de communiquer avec le serveur');
+    }
+  };
+
+  const handleEditClient = (client: OAuthClient) => {
+    setEditingClient(client);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingClient) return;
+    
+    setUpdating(true);
+    try {
+      const response = await fetch(`/api/admin/clients/${editingClient.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingClient.name,
+          description: editingClient.description,
+          redirectUris: editingClient.redirect_uris,
+          isActive: editingClient.is_active
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Client modifié avec succès');
+        setShowEditModal(false);
+        setEditingClient(null);
+        fetchClients();
+      } else {
+        const errorData = await response.json();
+        toast.error('Erreur lors de la modification', errorData.error);
+      }
+    } catch (error) {
+      console.error('Error updating client:', error);
+      toast.error('Erreur de connexion');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleDeleteClient = async (clientId: string, clientName: string) => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer le client "${clientName}" ?`)) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/admin/clients/${clientId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        toast.success('Client supprimé avec succès');
+        fetchClients();
+      } else {
+        const errorData = await response.json();
+        toast.error('Erreur lors de la suppression', errorData.error);
+      }
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      toast.error('Erreur de connexion');
     }
   };
 
@@ -212,11 +277,17 @@ export default function AdminClients() {
                   Créé le {new Date(client.created_at).toLocaleDateString('fr-FR')}
                 </div>
                 <div className="flex items-center space-x-2">
-                  <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                  <button 
+                    onClick={() => handleEditClient(client)}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
                     <i className="fas fa-edit mr-1"></i>
                     Modifier
                   </button>
-                  <button className="text-red-600 hover:text-red-800 text-sm font-medium">
+                  <button 
+                    onClick={() => handleDeleteClient(client.id, client.name)}
+                    className="text-red-600 hover:text-red-800 text-sm font-medium"
+                  >
                     <i className="fas fa-trash mr-1"></i>
                     Supprimer
                   </button>
@@ -339,6 +410,139 @@ export default function AdminClients() {
                 >
                   <i className="fas fa-plus mr-2"></i>
                   Créer le client
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Client Modal */}
+      {showEditModal && editingClient && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-6 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Modifier le Client OAuth</h2>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <i className="fas fa-times text-xl"></i>
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleUpdateClient} className="p-6 space-y-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Nom de l'application
+                </label>
+                <input
+                  type="text"
+                  value={editingClient.name}
+                  onChange={(e) => setEditingClient({ ...editingClient, name: e.target.value })}
+                  className="input-field"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Description
+                </label>
+                <textarea
+                  value={editingClient.description || ''}
+                  onChange={(e) => setEditingClient({ ...editingClient, description: e.target.value })}
+                  className="input-field"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  URLs de redirection
+                </label>
+                <div className="space-y-3">
+                  {editingClient.redirect_uris.map((uri, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <input
+                        type="url"
+                        value={uri}
+                        onChange={(e) => {
+                          const updated = [...editingClient.redirect_uris];
+                          updated[index] = e.target.value;
+                          setEditingClient({ ...editingClient, redirect_uris: updated });
+                        }}
+                        className="input-field"
+                        required
+                      />
+                      {editingClient.redirect_uris.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = editingClient.redirect_uris.filter((_, i) => i !== index);
+                            setEditingClient({ ...editingClient, redirect_uris: updated });
+                          }}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingClient({ 
+                        ...editingClient, 
+                        redirect_uris: [...editingClient.redirect_uris, ''] 
+                      });
+                    }}
+                    className="text-paiecash hover:text-paiecash-dark text-sm font-medium"
+                  >
+                    <i className="fas fa-plus mr-2"></i>
+                    Ajouter une URL
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={editingClient.is_active}
+                    onChange={(e) => setEditingClient({ ...editingClient, is_active: e.target.checked })}
+                    className="mr-2"
+                  />
+                  <span className="text-sm font-semibold text-gray-700">Client actif</span>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="btn-secondary"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={updating}
+                  className="btn-primary disabled:opacity-50"
+                >
+                  {updating ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin mr-2"></i>
+                      Sauvegarde...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-save mr-2"></i>
+                      Sauvegarder
+                    </>
+                  )}
                 </button>
               </div>
             </form>

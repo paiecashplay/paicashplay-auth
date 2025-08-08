@@ -72,16 +72,9 @@ function FacebookCallbackContent() {
             const scope = originalParams.get('scope');
             const oauthState = originalParams.get('state');
             
-            if (clientId && redirectUri) {
-              // Flux OAuth - rediriger vers l'endpoint d'autorisation
-              const authorizeUrl = new URL('/api/auth/authorize', window.location.origin);
-              authorizeUrl.searchParams.set('response_type', 'code');
-              authorizeUrl.searchParams.set('client_id', clientId);
-              authorizeUrl.searchParams.set('redirect_uri', redirectUri);
-              if (scope) authorizeUrl.searchParams.set('scope', scope);
-              if (oauthState) authorizeUrl.searchParams.set('state', oauthState);
-              
-              window.location.href = authorizeUrl.toString();
+            if (stateData.oauthSession) {
+              // Flux OAuth - rediriger vers l'endpoint continue
+              window.location.href = `/api/auth/continue?oauth_session=${stateData.oauthSession}`;
             } else {
               // Connexion directe - rediriger vers le dashboard
               window.location.href = '/dashboard';

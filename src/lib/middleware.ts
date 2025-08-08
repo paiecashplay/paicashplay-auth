@@ -9,19 +9,38 @@ export function requireAuth(handler: (request: NextRequest, user: any) => Promis
     try {
       await ensurePrismaReady();
       
-      const sessionToken = request.cookies.get('session-token')?.value;
+      const sessionToken = request.cookies.get('session_token')?.value || request.cookies.get('session-token')?.value;
       
       if (!sessionToken) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }
       
-      const authResult = await AuthService.validateSession(sessionToken);
-      
-      if (!authResult.success || !authResult.user) {
-        return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+      // Try JWT validation first
+      let user;
+      try {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET!) as any;
+        
+        // Get user from database
+        const { prisma } = require('./prisma');
+        user = await prisma.user.findUnique({
+          where: { id: decoded.userId },
+          include: { profile: true }
+        });
+        
+        if (!user) {
+          return NextResponse.json({ error: 'User not found' }, { status: 401 });
+        }
+      } catch (jwtError) {
+        // Fallback to old session validation
+        const authResult = await AuthService.validateSession(sessionToken);
+        
+        if (!authResult.success || !authResult.user) {
+          return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+        }
+        
+        user = authResult.user;
       }
-      
-      const user = authResult.user;
       
       return handler(request, user);
     } catch (error) {
@@ -37,19 +56,38 @@ export function requireUserType(allowedTypes: string[]) {
       try {
         await ensurePrismaReady();
         
-        const sessionToken = request.cookies.get('session-token')?.value;
+        const sessionToken = request.cookies.get('session_token')?.value || request.cookies.get('session-token')?.value;
         
         if (!sessionToken) {
           return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
         }
         
-        const authResult = await AuthService.validateSession(sessionToken);
-        
-        if (!authResult.success || !authResult.user) {
-          return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+        // Try JWT validation first
+        let user;
+        try {
+          const jwt = require('jsonwebtoken');
+          const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET!) as any;
+          
+          // Get user from database
+          const { prisma } = require('./prisma');
+          user = await prisma.user.findUnique({
+            where: { id: decoded.userId },
+            include: { profile: true }
+          });
+          
+          if (!user) {
+            return NextResponse.json({ error: 'User not found' }, { status: 401 });
+          }
+        } catch (jwtError) {
+          // Fallback to old session validation
+          const authResult = await AuthService.validateSession(sessionToken);
+          
+          if (!authResult.success || !authResult.user) {
+            return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+          }
+          
+          user = authResult.user;
         }
-        
-        const user = authResult.user;
         
         if (!allowedTypes.includes(user.userType)) {
           return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });

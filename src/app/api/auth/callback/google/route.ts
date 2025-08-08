@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     let stateData;
     try {
       stateData = JSON.parse(atob(state));
+
     } catch {
       return NextResponse.redirect(new URL('/login?error=invalid_state', request.url));
     }
@@ -45,9 +46,36 @@ export async function GET(request: NextRequest) {
     if (existingUser) {
       // Login existing user
       const clientIP = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || 'unknown';
-      const sessionToken = await AuthService.createSession(existingUser.id, request.headers.get('user-agent') || '', clientIP);
+      const jwt = require('jsonwebtoken');
+      const sessionToken = jwt.sign(
+        { userId: existingUser.id, email: existingUser.email },
+        process.env.JWT_SECRET!,
+        { expiresIn: '7d' }
+      );
       
-      const response = NextResponse.redirect(new URL('/dashboard', request.url));
+      // Créer la session en base
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      await prisma.userSession.create({
+        data: {
+          userId: existingUser.id,
+          sessionToken,
+          expiresAt,
+          ipAddress: clientIP,
+          userAgent: request.headers.get('user-agent') || 'unknown'
+        }
+      });
+      
+
+      
+      // Check if this is an OAuth flow
+      const oauthSession = stateData.oauthSession;
+      let redirectUrl = '/dashboard';
+      
+      if (oauthSession) {
+        redirectUrl = `/api/auth/continue?oauth_session=${oauthSession}`;
+      }
+      
+      const response = NextResponse.redirect(new URL(redirectUrl, request.url));
       response.cookies.set('session_token', sessionToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

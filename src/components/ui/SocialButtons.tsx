@@ -11,12 +11,15 @@ interface Provider {
 
 interface SocialButtonsProps {
   mode: 'login' | 'signup';
+  oauthSession?: string;
   onSocialAuth?: (provider: string) => void;
 }
 
-export default function SocialButtons({ mode, onSocialAuth }: SocialButtonsProps) {
+export default function SocialButtons({ mode, oauthSession, onSocialAuth }: SocialButtonsProps) {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
+  
+
 
   useEffect(() => {
     fetchProviders();
@@ -38,11 +41,14 @@ export default function SocialButtons({ mode, onSocialAuth }: SocialButtonsProps
     setLoading(provider.name);
     
     try {
-      const state = btoa(JSON.stringify({ 
+      const stateData = { 
         mode, 
         provider: provider.name,
+        oauthSession,
         timestamp: Date.now() 
-      }));
+      };
+      
+      const state = btoa(JSON.stringify(stateData));
       
       window.location.href = `/api/auth/${provider.name}?state=${state}`;
       

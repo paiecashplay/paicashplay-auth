@@ -5,14 +5,18 @@ import { cookies } from 'next/headers';
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const sessionToken = cookieStore.get('session_token')?.value;
+    const sessionToken = cookieStore.get('session_token')?.value || cookieStore.get('session-token')?.value;
     
     if (sessionToken) {
       await AuthService.logout(sessionToken);
+
     }
     
-    // Clear session cookie
+    // Clear both possible session cookies
     cookieStore.delete('session_token');
+    cookieStore.delete('session-token');
+    
+
     
     return NextResponse.json({
       success: true,

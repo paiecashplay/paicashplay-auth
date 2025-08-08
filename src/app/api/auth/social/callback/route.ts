@@ -62,9 +62,13 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Créer une session avec token simple
-      const { generateSecureToken } = await import('@/lib/password');
-      const sessionToken = generateSecureToken();
+      // Créer une session avec JWT
+      const jwt = require('jsonwebtoken');
+      const sessionToken = jwt.sign(
+        { userId: user.id, email: user.email },
+        process.env.JWT_SECRET!,
+        { expiresIn: '7d' }
+      );
 
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       
@@ -77,16 +81,20 @@ export async function POST(request: NextRequest) {
           userAgent: request.headers.get('user-agent') || 'unknown'
         }
       });
+      
+      console.log('✅ JWT session created for user:', user.email);
 
       // Définir le cookie de session
       const cookieStore = await cookies();
-      cookieStore.set('session-token', sessionToken, {
+      cookieStore.set('session_token', sessionToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
         maxAge: 7 * 24 * 60 * 60
       });
+      
+
 
       return NextResponse.json({
         success: true,

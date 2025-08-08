@@ -98,8 +98,22 @@ model OAuthClient {
   createdAt          DateTime            @default(now()) @map("created_at")
   authorizationCodes AuthorizationCode[]
   accessTokens       AccessToken[]
+  oauthSessions      OAuthSession[]
 
   @@map("oauth_clients")
+}
+
+model OAuthSession {
+  id          String      @id @default(cuid())
+  clientId    String      @map("client_id")
+  redirectUri String      @map("redirect_uri")
+  scope       String?
+  state       String?
+  expiresAt   DateTime    @map("expires_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  client      OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+
+  @@map("oauth_sessions")
 }
 
 model AuthorizationCode {
@@ -224,38 +238,36 @@ model AdminLog {
 }
 
 model IdentityProvider {
-  id           String       @id @default(cuid())
-  name         String       @unique
-  displayName  String       @map("display_name")
-  type         ProviderType
-  clientId     String       @map("client_id")
-  clientSecret String       @map("client_secret")
-  isEnabled    Boolean      @default(true) @map("is_enabled")
-  config       Json?
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
-
+  id             String          @id @default(cuid())
+  name           String          @unique
+  displayName    String          @map("display_name")
+  type           ProviderType
+  clientId       String          @map("client_id")
+  clientSecret   String          @map("client_secret")
+  isEnabled      Boolean         @default(true) @map("is_enabled")
+  config         Json?
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
   socialAccounts SocialAccount[]
 
   @@map("identity_providers")
 }
 
 model SocialAccount {
-  id         String   @id @default(cuid())
-  userId     String   @map("user_id")
-  providerId String   @map("provider_id")
-  providerUserId String @map("provider_user_id") @db.VarChar(50)
-  email      String?
-  name       String?
-  avatar     String?
-  accessToken String? @map("access_token") @db.Text
-  refreshToken String? @map("refresh_token") @db.Text
-  expiresAt  DateTime? @map("expires_at")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider IdentityProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  id             String           @id @default(cuid())
+  userId         String           @map("user_id")
+  providerId     String           @map("provider_id")
+  providerUserId String           @map("provider_user_id") @db.VarChar(50)
+  email          String?
+  name           String?
+  avatar         String?
+  accessToken    String?          @map("access_token") @db.Text
+  refreshToken   String?          @map("refresh_token") @db.Text
+  expiresAt      DateTime?        @map("expires_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       IdentityProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@unique([providerId, providerUserId])
   @@map("social_accounts")
@@ -267,6 +279,7 @@ enum UserType {
   club
   player
   company
+  affiliate
 }
 
 enum ConfigType {

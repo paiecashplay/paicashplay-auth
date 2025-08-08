@@ -23,12 +23,12 @@ export async function GET(request: NextRequest) {
   // Validate client
   const client = await OAuthService.validateClient(client_id);
   if (!client) {
-    return NextResponse.json({ error: 'invalid_client' }, { status: 400 });
+    return NextResponse.redirect(new URL('/error?error=invalid_client&description=Client non trouvé', request.url));
   }
   
   // Validate redirect URI
   if (!OAuthService.validateRedirectUri(client, redirect_uri)) {
-    return NextResponse.json({ error: 'invalid_redirect_uri' }, { status: 400 });
+    return NextResponse.redirect(new URL('/error?error=invalid_redirect_uri&description=URL de redirection non autorisée', request.url));
   }
   
   // Validate scope
@@ -38,15 +38,27 @@ export async function GET(request: NextRequest) {
   
   // Check if user is authenticated
   const cookieStore = await cookies();
-  const sessionToken = cookieStore.get('session-token')?.value;
+  const sessionToken = cookieStore.get('session_token')?.value || cookieStore.get('session-token')?.value;
+  
+  // Always create OAuth session for OAuth flows
+  const { prisma } = require('@/lib/prisma');
+  const oauthSessionId = require('crypto').randomUUID();
+  
+  await prisma.oAuthSession.create({
+    data: {
+      id: oauthSessionId,
+      clientId: client.client_id,
+      redirectUri: redirect_uri,
+      scope,
+      state,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+    }
+  });
   
   if (!sessionToken) {
-    // Redirect to login with OAuth parameters
+    // Redirect to login with session ID
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('client_id', client_id);
-    loginUrl.searchParams.set('redirect_uri', redirect_uri);
-    loginUrl.searchParams.set('scope', scope);
-    if (state) loginUrl.searchParams.set('state', state);
+    loginUrl.searchParams.set('oauth_session', oauthSessionId);
     
     return NextResponse.redirect(loginUrl);
   }
@@ -60,57 +72,16 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     // Invalid session, redirect to login
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('client_id', client_id);
-    loginUrl.searchParams.set('redirect_uri', redirect_uri);
-    loginUrl.searchParams.set('scope', scope);
-    if (state) loginUrl.searchParams.set('state', state);
+    loginUrl.searchParams.set('oauth_session', oauthSessionId);
     
     return NextResponse.redirect(loginUrl);
   }
   
-  // Check if user has already consented to this client
-  const { prisma } = require('@/lib/prisma');
-  const existingConsent = await prisma.userConsent.findUnique({
-    where: {
-      userId_clientId: {
-        userId,
-        clientId: client.id
-      }
-    }
-  });
+  // User is already authenticated - redirect to continue with OAuth session
+  const continueUrl = new URL('/api/auth/continue', request.url);
+  continueUrl.searchParams.set('oauth_session', oauthSessionId);
   
-  if (existingConsent) {
-    // User has already consented, generate code directly
-    const { generateSecureToken } = require('@/lib/password');
-    const authCode = generateSecureToken();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-    
-    await prisma.authorizationCode.create({
-      data: {
-        code: authCode,
-        clientId: client.id,
-        userId,
-        redirectUri: redirect_uri,
-        scope: scope || 'openid',
-        expiresAt
-      }
-    });
-    
-    const redirectUrl = new URL(redirect_uri);
-    redirectUrl.searchParams.set('code', authCode);
-    if (state) redirectUrl.searchParams.set('state', state);
-    
-    return NextResponse.redirect(redirectUrl);
-  }
-  
-  // Redirect to consent page
-  const consentUrl = new URL('/consent', request.url);
-  consentUrl.searchParams.set('client_id', client_id);
-  consentUrl.searchParams.set('redirect_uri', redirect_uri);
-  consentUrl.searchParams.set('scope', scope);
-  if (state) consentUrl.searchParams.set('state', state);
-  
-  return NextResponse.redirect(consentUrl);
+  return NextResponse.redirect(continueUrl);
 }
 
 export async function POST(request: NextRequest) {

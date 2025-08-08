@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test OAuth</title>
+</head>
+<body>
+    <h1>Test OAuth Flow</h1>
+    <button onclick="testOAuth()">Test OAuth Authorization</button>
+    
+    <script>
+        function testOAuth() {
+            const params = new URLSearchParams({
+                response_type: 'code',
+                client_id: 'client_1754642620743_6rcavl83k', // Remplacer par un vrai client_id
+                redirect_uri: 'http://localhost:3000/test-callback',
+                scope: 'openid profile email',
+                state: 'test_state_123'
+            });
+            console.log("PArams ",params)
+            // window.location.href = `"http://localhost:3000/api/auth/authorize?${params.toString()}`;
+        }
+    </script>
+</body>
+</html>

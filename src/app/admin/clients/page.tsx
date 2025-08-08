@@ -21,14 +21,27 @@ export default function AdminClients() {
   const [clients, setClients] = useState<OAuthClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingClient, setEditingClient] = useState<OAuthClient | null>(null);
-  const [updating, setUpdating] = useState(false);
+
   const [newClient, setNewClient] = useState({
     name: '',
     description: '',
-    redirectUris: ['']
+    redirectUris: [''],
+    allowedScopes: ['openid', 'profile', 'email']
   });
+  
+  const availableScopes = [
+    { id: 'openid', name: 'OpenID Connect', description: 'Authentification de base' },
+    { id: 'profile', name: 'Profil', description: 'Accès au profil utilisateur' },
+    { id: 'email', name: 'Email', description: 'Accès à l\'adresse email' },
+    { id: 'users:read', name: 'Lecture utilisateurs', description: 'Lister les utilisateurs' },
+    { id: 'users:write', name: 'Écriture utilisateurs', description: 'Créer/modifier des utilisateurs' },
+    { id: 'clubs:read', name: 'Lecture clubs', description: 'Lister les clubs' },
+    { id: 'clubs:write', name: 'Écriture clubs', description: 'Créer/modifier des clubs' },
+    { id: 'clubs:members', name: 'Membres clubs', description: 'Accès aux membres des clubs' },
+    { id: 'players:read', name: 'Lecture joueurs', description: 'Lister les joueurs' },
+    { id: 'players:write', name: 'Écriture joueurs', description: 'Créer/modifier des joueurs' },
+    { id: 'federations:read', name: 'Lecture fédérations', description: 'Lister les fédérations' }
+  ];
   const toast = useToast();
 
   useEffect(() => {
@@ -60,7 +73,8 @@ export default function AdminClients() {
         body: JSON.stringify({
           name: newClient.name,
           description: newClient.description,
-          redirectUris: newClient.redirectUris.filter(uri => uri.trim() !== '')
+          redirectUris: newClient.redirectUris.filter(uri => uri.trim() !== ''),
+          allowedScopes: newClient.allowedScopes
         })
       });
 
@@ -68,7 +82,7 @@ export default function AdminClients() {
         const data = await response.json();
         toast.success('Client créé avec succès', `Client ID: ${data.client.clientId}`);
         setShowCreateModal(false);
-        setNewClient({ name: '', description: '', redirectUris: [''] });
+        setNewClient({ name: '', description: '', redirectUris: [''], allowedScopes: ['openid', 'profile', 'email'] });
         fetchClients();
       } else {
         const errorData = await response.json();
@@ -81,43 +95,10 @@ export default function AdminClients() {
   };
 
   const handleEditClient = (client: OAuthClient) => {
-    setEditingClient(client);
-    setShowEditModal(true);
+    window.location.href = `/admin/clients/${client.id}/edit`;
   };
 
-  const handleUpdateClient = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingClient) return;
-    
-    setUpdating(true);
-    try {
-      const response = await fetch(`/api/admin/clients/${editingClient.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: editingClient.name,
-          description: editingClient.description,
-          redirectUris: editingClient.redirect_uris,
-          isActive: editingClient.is_active
-        })
-      });
 
-      if (response.ok) {
-        toast.success('Client modifié avec succès');
-        setShowEditModal(false);
-        setEditingClient(null);
-        fetchClients();
-      } else {
-        const errorData = await response.json();
-        toast.error('Erreur lors de la modification', errorData.error);
-      }
-    } catch (error) {
-      console.error('Error updating client:', error);
-      toast.error('Erreur de connexion');
-    } finally {
-      setUpdating(false);
-    }
-  };
 
   const handleDeleteClient = async (clientId: string, clientName: string) => {
     if (!confirm(`Êtes-vous sûr de vouloir supprimer le client "${clientName}" ?`)) {
@@ -396,6 +377,43 @@ export default function AdminClients() {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Permissions (Scopes)
+                </label>
+                <div className="grid grid-cols-1 gap-3 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-4">
+                  {availableScopes.map((scope) => (
+                    <label key={scope.id} className="flex items-start space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={newClient.allowedScopes.includes(scope.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setNewClient({
+                              ...newClient,
+                              allowedScopes: [...newClient.allowedScopes, scope.id]
+                            });
+                          } else {
+                            setNewClient({
+                              ...newClient,
+                              allowedScopes: newClient.allowedScopes.filter(s => s !== scope.id)
+                            });
+                          }
+                        }}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">{scope.name}</div>
+                        <div className="text-xs text-gray-500">{scope.description}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                <div className="mt-2 text-xs text-gray-500">
+                  Sélectionnez les permissions que cette application pourra demander
+                </div>
+              </div>
+
               <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
                 <button
                   type="button"
@@ -417,138 +435,7 @@ export default function AdminClients() {
         </div>
       )}
 
-      {/* Edit Client Modal */}
-      {showEditModal && editingClient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-6 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Modifier le Client OAuth</h2>
-                <button
-                  onClick={() => setShowEditModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <i className="fas fa-times text-xl"></i>
-                </button>
-              </div>
-            </div>
 
-            <form onSubmit={handleUpdateClient} className="p-6 space-y-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Nom de l'application
-                </label>
-                <input
-                  type="text"
-                  value={editingClient.name}
-                  onChange={(e) => setEditingClient({ ...editingClient, name: e.target.value })}
-                  className="input-field"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Description
-                </label>
-                <textarea
-                  value={editingClient.description || ''}
-                  onChange={(e) => setEditingClient({ ...editingClient, description: e.target.value })}
-                  className="input-field"
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  URLs de redirection
-                </label>
-                <div className="space-y-3">
-                  {editingClient.redirect_uris.map((uri, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <input
-                        type="url"
-                        value={uri}
-                        onChange={(e) => {
-                          const updated = [...editingClient.redirect_uris];
-                          updated[index] = e.target.value;
-                          setEditingClient({ ...editingClient, redirect_uris: updated });
-                        }}
-                        className="input-field"
-                        required
-                      />
-                      {editingClient.redirect_uris.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = editingClient.redirect_uris.filter((_, i) => i !== index);
-                            setEditingClient({ ...editingClient, redirect_uris: updated });
-                          }}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingClient({ 
-                        ...editingClient, 
-                        redirect_uris: [...editingClient.redirect_uris, ''] 
-                      });
-                    }}
-                    className="text-paiecash hover:text-paiecash-dark text-sm font-medium"
-                  >
-                    <i className="fas fa-plus mr-2"></i>
-                    Ajouter une URL
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={editingClient.is_active}
-                    onChange={(e) => setEditingClient({ ...editingClient, is_active: e.target.checked })}
-                    className="mr-2"
-                  />
-                  <span className="text-sm font-semibold text-gray-700">Client actif</span>
-                </label>
-              </div>
-
-              <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setShowEditModal(false)}
-                  className="btn-secondary"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={updating}
-                  className="btn-primary disabled:opacity-50"
-                >
-                  {updating ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin mr-2"></i>
-                      Sauvegarde...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-save mr-2"></i>
-                      Sauvegarder
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </AdminLayout>
   );
 }

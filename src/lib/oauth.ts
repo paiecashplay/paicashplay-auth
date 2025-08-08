@@ -214,7 +214,17 @@ export class OAuthService {
 
   static validateScope(client: OAuthClient, scope: string): boolean {
     const requestedScopes = scope.split(' ');
-    return requestedScopes.every(s => client.allowed_scopes.includes(s));
+    const validScopes = [
+      'openid', 'profile', 'email',
+      'users:read', 'users:write',
+      'clubs:read', 'clubs:write', 'clubs:members',
+      'players:read', 'players:write',
+      'federations:read'
+    ];
+    
+    return requestedScopes.every(s => 
+      validScopes.includes(s) && client.allowed_scopes.includes(s)
+    );
   }
 
   static async revokeToken(token: string, tokenType: 'access_token' | 'refresh_token') {

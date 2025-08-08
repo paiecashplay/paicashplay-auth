@@ -36,12 +36,53 @@ export async function POST(request: NextRequest) {
       }, { status: 401 });
     }
     
+    // Get user ID from token before revoking
+    let userId: string | null = null;
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      userId = decoded.sub || decoded.userId;
+    } catch (error) {
+      // Token might be invalid, continue with revocation anyway
+    }
+
     // Revoke token (try both types if hint not provided)
     if (!token_type_hint || token_type_hint === 'access_token') {
       await OAuthService.revokeToken(token, 'access_token');
     }
     if (!token_type_hint || token_type_hint === 'refresh_token') {
       await OAuthService.revokeToken(token, 'refresh_token');
+    }
+
+    // IMPORTANT: Also revoke all user sessions to force re-authentication
+    if (userId) {
+      const { prisma } = require('@/lib/prisma');
+      
+      // Marquer l'utilisateur comme nécessitant une réauthentification
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          profile: {
+            update: {
+              metadata: {
+                ...{}, // Garder les métadonnées existantes
+                requireReauth: true,
+                revokedAt: new Date().toISOString()
+              }
+            }
+          }
+        }
+      });
+      
+      // Expirer toutes les sessions
+      await prisma.userSession.updateMany({
+        where: { userId },
+        data: { 
+          expiresAt: new Date() // Expire all sessions immediately
+        }
+      });
+      
+      console.log(`🔒 Revoked all sessions for user ${userId} due to OAuth token revocation`);
     }
     
     await AuditService.log({

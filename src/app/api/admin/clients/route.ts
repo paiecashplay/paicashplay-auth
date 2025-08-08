@@ -17,11 +17,27 @@ export const GET = requireAdmin(async (request: NextRequest, admin: any) => {
 export const POST = requireAdmin(async (request: NextRequest, admin: any) => {
   try {
     const body = await request.json();
-    const { name, description, redirectUris, allowedScopes } = body;
+    const { name, description, redirectUris, allowedScopes = ['openid', 'profile', 'email'] } = body;
     
     if (!name || !redirectUris || !Array.isArray(redirectUris) || redirectUris.length === 0) {
       return NextResponse.json({ 
         error: 'Name and redirect URIs are required' 
+      }, { status: 400 });
+    }
+    
+    // Validate scopes
+    const validScopes = [
+      'openid', 'profile', 'email',
+      'users:read', 'users:write',
+      'clubs:read', 'clubs:write', 'clubs:members',
+      'players:read', 'players:write',
+      'federations:read'
+    ];
+    
+    const invalidScopes = allowedScopes.filter(scope => !validScopes.includes(scope));
+    if (invalidScopes.length > 0) {
+      return NextResponse.json({ 
+        error: `Invalid scopes: ${invalidScopes.join(', ')}` 
       }, { status: 400 });
     }
     

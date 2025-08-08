@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
   const redirect_uri = searchParams.get('redirect_uri');
   const scope = searchParams.get('scope') || 'openid profile email';
   const state = searchParams.get('state');
+  const prompt = searchParams.get('prompt'); // login, consent, select_account
   
   // Validate required parameters
   if (!response_type || !client_id || !redirect_uri) {
@@ -55,25 +56,78 @@ export async function GET(request: NextRequest) {
     }
   });
   
-  if (!sessionToken) {
+  if (!sessionToken || prompt === 'login') {
     // Redirect to login with session ID
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('oauth_session', oauthSessionId);
+    
+    // Si prompt=login, forcer la déconnexion d'abord
+    if (prompt === 'login' && sessionToken) {
+      const cookieStore = await cookies();
+      cookieStore.delete('session_token');
+      cookieStore.delete('session-token');
+      console.log('🔄 Forced logout due to prompt=login');
+    }
     
     return NextResponse.redirect(loginUrl);
   }
   
   // Validate session and get user
   let userId: string;
+  let user: any;
   try {
     const jwt = require('jsonwebtoken');
     const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET!) as any;
     userId = decoded.userId;
+    
+    // Vérifier si l'utilisateur nécessite une réauthentification
+    const { prisma } = require('@/lib/prisma');
+    user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true }
+    });
+    
+    if (user?.profile?.metadata?.requireReauth) {
+      console.log('🔄 User requires re-authentication due to token revocation');
+      
+      // Supprimer le flag et forcer la reconnexion
+      await prisma.userProfile.update({
+        where: { userId },
+        data: {
+          metadata: {
+            ...user.profile.metadata,
+            requireReauth: false
+          }
+        }
+      });
+      
+      const cookieStore = await cookies();
+      cookieStore.delete('session_token');
+      cookieStore.delete('session-token');
+      
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('oauth_session', oauthSessionId);
+      
+      return NextResponse.redirect(loginUrl);
+    }
   } catch (error) {
     // Invalid session, redirect to login
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('oauth_session', oauthSessionId);
     
+    return NextResponse.redirect(loginUrl);
+  }
+  
+  // Si prompt=login est spécifié, forcer la réauthentification même si l'utilisateur est connecté
+  if (prompt === 'login') {
+    const cookieStore = await cookies();
+    cookieStore.delete('session_token');
+    cookieStore.delete('session-token');
+    
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('oauth_session', oauthSessionId);
+    
+    console.log('🔄 Forced re-authentication due to prompt=login');
     return NextResponse.redirect(loginUrl);
   }
   

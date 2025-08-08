@@ -21,16 +21,24 @@ export function requireAuth(handler: (request: NextRequest, user: any) => Promis
         const jwt = require('jsonwebtoken');
         const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET!) as any;
         
-        // Get user from database
+        // Get user from database and verify session is still valid
         const { prisma } = require('./prisma');
-        user = await prisma.user.findUnique({
-          where: { id: decoded.userId },
-          include: { profile: true }
+        const userSession = await prisma.userSession.findFirst({
+          where: {
+            userId: decoded.userId,
+            sessionToken,
+            expiresAt: { gt: new Date() } // Vérifier que la session n'est pas expirée
+          },
+          include: {
+            user: { include: { profile: true } }
+          }
         });
         
-        if (!user) {
-          return NextResponse.json({ error: 'User not found' }, { status: 401 });
+        if (!userSession || !userSession.user) {
+          return NextResponse.json({ error: 'Session expired or invalid' }, { status: 401 });
         }
+        
+        user = userSession.user;
       } catch (jwtError) {
         // Fallback to old session validation
         const authResult = await AuthService.validateSession(sessionToken);
@@ -68,16 +76,24 @@ export function requireUserType(allowedTypes: string[]) {
           const jwt = require('jsonwebtoken');
           const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET!) as any;
           
-          // Get user from database
+          // Get user from database and verify session is still valid
           const { prisma } = require('./prisma');
-          user = await prisma.user.findUnique({
-            where: { id: decoded.userId },
-            include: { profile: true }
+          const userSession = await prisma.userSession.findFirst({
+            where: {
+              userId: decoded.userId,
+              sessionToken,
+              expiresAt: { gt: new Date() } // Vérifier que la session n'est pas expirée
+            },
+            include: {
+              user: { include: { profile: true } }
+            }
           });
           
-          if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 401 });
+          if (!userSession || !userSession.user) {
+            return NextResponse.json({ error: 'Session expired or invalid' }, { status: 401 });
           }
+          
+          user = userSession.user;
         } catch (jwtError) {
           // Fallback to old session validation
           const authResult = await AuthService.validateSession(sessionToken);

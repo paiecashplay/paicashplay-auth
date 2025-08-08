@@ -15,16 +15,24 @@ export async function GET(request: NextRequest) {
       const jwt = require('jsonwebtoken');
       const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET!) as any;
       
-      // Get user from database
+      // Get user from database and verify session is still valid
       const { prisma } = require('@/lib/prisma');
-      user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        include: { profile: true }
+      const userSession = await prisma.userSession.findFirst({
+        where: {
+          userId: decoded.userId,
+          sessionToken,
+          expiresAt: { gt: new Date() } // Vérifier que la session n'est pas expirée
+        },
+        include: {
+          user: { include: { profile: true } }
+        }
       });
       
-      if (!user) {
+      if (!userSession || !userSession.user) {
         return NextResponse.json({ authenticated: false }, { status: 401 });
       }
+      
+      user = userSession.user;
     } catch (jwtError) {
       // Fallback to old session validation
       const authResult = await AuthService.validateSession(request);

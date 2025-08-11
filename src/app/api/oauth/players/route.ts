@@ -77,9 +77,9 @@ export const GET = requireOAuthScope(['players:read'])(async (request: NextReque
       phone: player.profile?.phone,
       isVerified: player.isVerified,
       createdAt: player.createdAt,
-      club: player.profile?.metadata?.clubId ? {
-        id: player.profile.metadata.clubId,
-        name: player.profile.metadata.clubName
+      club: (player.profile?.metadata as any)?.clubId ? {
+        id: (player.profile?.metadata as any).clubId,
+        name: (player.profile?.metadata as any).clubName
       } : null,
       metadata: player.profile?.metadata
     })),

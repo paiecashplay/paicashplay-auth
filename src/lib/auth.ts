@@ -6,9 +6,10 @@ export const getUserTypeLabel = (type: UserType): string => {
     club: 'Club',
     federation: 'Fédération',
     donor: 'Donateur',
-    company: 'Société'
+    company: 'Société',
+    affiliate: 'Affilié'
   };
-  return labels[type];
+  return labels[type] || type;
 };
 
 export const validateEmail = (email: string): boolean => {

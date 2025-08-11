@@ -5,13 +5,14 @@ import { prisma } from '@/lib/prisma';
 // GET /api/admin/clients/[id] - Récupérer un client spécifique
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   // Apply admin middleware manually
   const adminCheck = requireAdmin(async (req: NextRequest, admin: any) => {
     try {
       const client = await prisma.oAuthClient.findUnique({
-        where: { id: params.id }
+        where: { id: resolvedParams.id }
       });
 
       if (!client) {
@@ -43,8 +44,9 @@ export async function GET(
 // PUT /api/admin/clients/[id] - Modifier un client
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   const adminCheck = requireAdmin(async (req: NextRequest, admin: any) => {
     try {
       const { name, description, redirectUris, allowedScopes, isActive } = await req.json();
@@ -59,7 +61,7 @@ export async function PUT(
         'federations:read'
       ];
       
-      const invalidScopes = allowedScopes.filter(scope => !validScopes.includes(scope));
+      const invalidScopes = allowedScopes.filter((scope: string) => !validScopes.includes(scope));
       if (invalidScopes.length > 0) {
         return NextResponse.json({ 
           error: `Invalid scopes: ${invalidScopes.join(', ')}` 
@@ -68,7 +70,7 @@ export async function PUT(
     }
 
       const client = await prisma.oAuthClient.update({
-        where: { id: params.id },
+        where: { id: resolvedParams.id },
         data: {
           name,
           description,
@@ -94,12 +96,13 @@ export async function PUT(
 // DELETE /api/admin/clients/[id] - Supprimer un client
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   const adminCheck = requireAdmin(async (req: NextRequest, admin: any) => {
     try {
       await prisma.oAuthClient.delete({
-        where: { id: params.id }
+        where: { id: resolvedParams.id }
       });
 
       return NextResponse.json({ success: true });

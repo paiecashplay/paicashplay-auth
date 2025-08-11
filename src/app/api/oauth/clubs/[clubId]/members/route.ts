@@ -6,290 +6,242 @@ import { prisma } from '@/lib/prisma';
 export const GET = requireOAuthScope(['clubs:members'])(async (
   request: NextRequest, 
   context,
-  { params }: { params: { clubId: string } }
+  routeParams
 ) => {
+  const { params } = routeParams || { params: {} };
+  if (!params?.clubId) {
+    return NextResponse.json({ error: 'Club ID required' }, { status: 400 });
+  }
+  
   const { searchParams } = new URL(request.url);
   const position = searchParams.get('position');
   const status = searchParams.get('status');
   const page = parseInt(searchParams.get('page') || '1');
   const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
 
-  // Verify club exists
-  const club = await prisma.user.findFirst({
-    where: { 
-      id: params.clubId,
-      userType: 'club'
+  try {
+    // Verify club exists
+    const club = await prisma.user.findFirst({
+      where: { 
+        id: params.clubId,
+        userType: 'club'
+      },
+      include: { profile: true }
+    });
+
+    if (!club) {
+      return NextResponse.json({ error: 'Club not found' }, { status: 404 });
     }
-  });
 
-  if (!club) {
-    return NextResponse.json({ error: 'Club not found' }, { status: 404 });
-  }
+    // Find players associated with this club using MySQL JSON syntax
+    let members = await prisma.user.findMany({
+      where: {
+        userType: 'player',
+        profile: {
+          metadata: {
+            path: '$.clubId',
+            equals: params.clubId
+          }
+        }
+      },
+      include: { profile: true }
+    });
 
-  // Find players associated with this club
-  const whereClause: any = {
-    userType: 'player',
-    profile: {
-      metadata: {
-        path: ['clubId'],
-        equals: params.clubId
+    // Apply additional filters with Prisma
+    if (position || status) {
+      const additionalFilters: any = {
+        userType: 'player',
+        profile: {
+          metadata: {
+            path: '$.clubId',
+            equals: params.clubId
+          }
+        }
+      };
+      
+      if (position) {
+        additionalFilters.AND = additionalFilters.AND || [];
+        additionalFilters.AND.push({
+          profile: {
+            metadata: {
+              path: '$.position',
+              equals: position
+            }
+          }
+        });
       }
+      
+      if (status) {
+        additionalFilters.AND = additionalFilters.AND || [];
+        additionalFilters.AND.push({
+          profile: {
+            metadata: {
+              path: '$.status',
+              equals: status
+            }
+          }
+        });
+      }
+      
+      members = await prisma.user.findMany({
+        where: additionalFilters,
+        include: { profile: true }
+      });
     }
-  };
-  
-  // Ajouter les filtres additionnels
-  if (position || status) {
-    const additionalFilters: any = {};
-    if (position) additionalFilters.position = position;
-    if (status) additionalFilters.status = status;
-    
-    whereClause.profile.metadata = {
-      ...whereClause.profile.metadata,
-      ...Object.entries(additionalFilters).reduce((acc, [key, value]) => {
-        acc[key] = value;
-        return acc;
-      }, {} as any)
-    };
-  }
-  
-  const members = await prisma.user.findMany({
-    where: whereClause,
-    include: {
-      profile: true
-    },
-    skip: (page - 1) * limit,
-    take: limit,
-    orderBy: { createdAt: 'desc' }
-  });
 
-  const total = await prisma.user.count({
-    where: {
-      userType: 'player',
-      profile: {
-        metadata: {
-          path: ['clubId'],
-          equals: params.clubId
+    // Get total count
+    const total = await prisma.user.count({
+      where: {
+        userType: 'player',
+        profile: {
+          metadata: {
+            path: '$.clubId',
+            equals: params.clubId
+          }
         }
       }
-    }
-  });
+    });
+    
+    // Apply pagination with Prisma
+    const paginatedMembers = await prisma.user.findMany({
+      where: {
+        userType: 'player',
+        profile: {
+          metadata: {
+            path: '$.clubId',
+            equals: params.clubId
+          }
+        }
+      },
+      include: { profile: true },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: 'desc' }
+    });
 
-  return NextResponse.json({
-    club: {
-      id: club.id,
-      name: club.profile?.firstName || club.email
-    },
-    members: members.map(member => ({
-      id: member.id,
-      email: member.email,
-      firstName: member.profile?.firstName,
-      lastName: member.profile?.lastName,
-      country: member.profile?.country,
-      phone: member.profile?.phone,
-      isVerified: member.isVerified,
-      createdAt: member.createdAt,
-      metadata: member.profile?.metadata
-    })),
-    pagination: {
-      page,
-      limit,
-      total,
-      pages: Math.ceil(total / limit)
-    }
-  });
+    return NextResponse.json({
+      club: {
+        id: club.id,
+        name: club.profile?.firstName || club.email
+      },
+      members: paginatedMembers.map(member => ({
+        id: member.id,
+        email: member.email,
+        firstName: member.profile?.firstName,
+        lastName: member.profile?.lastName,
+        country: member.profile?.country,
+        phone: member.profile?.phone,
+        isVerified: member.isVerified,
+        createdAt: member.createdAt,
+        metadata: member.profile?.metadata
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('Get members error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 });
 
 // POST /api/oauth/clubs/[clubId]/members - Ajouter un membre au club
 export const POST = requireOAuthScope(['clubs:write', 'users:write'])(async (
   request: NextRequest,
   context,
-  { params }: { params: { clubId: string } }
+  routeParams
 ) => {
-  const body = await request.json();
-  const { email, password, firstName, lastName, country, phone, metadata = {} } = body;
-
-  if (!email || !password || !firstName || !lastName) {
-    return NextResponse.json({ 
-      error: 'Missing required fields: email, password, firstName, lastName' 
-    }, { status: 400 });
+  const { params } = routeParams || { params: {} };
+  if (!params?.clubId) {
+    return NextResponse.json({ error: 'Club ID required' }, { status: 400 });
   }
+  
+  try {
+    const body = await request.json();
+    const { email, password, firstName, lastName, country, phone, metadata = {} } = body;
 
-  // Verify club exists and user has permission
-  const club = await prisma.user.findFirst({
-    where: { 
-      id: params.clubId,
-      userType: 'club'
+    if (!email || !password || !firstName || !lastName) {
+      return NextResponse.json({ 
+        error: 'Missing required fields: email, password, firstName, lastName' 
+      }, { status: 400 });
     }
-  });
 
-  if (!club) {
-    return NextResponse.json({ error: 'Club not found' }, { status: 404 });
-  }
+    // Verify club exists
+    const club = await prisma.user.findFirst({
+      where: { 
+        id: params.clubId,
+        userType: 'club'
+      },
+      include: { profile: true }
+    });
 
-  // Check if user already exists
-  const existingUser = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() }
-  });
+    if (!club) {
+      return NextResponse.json({ error: 'Club not found' }, { status: 404 });
+    }
 
-  if (existingUser) {
-    return NextResponse.json({ 
-      error: 'User with this email already exists' 
-    }, { status: 409 });
-  }
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
 
-  // Hash password
-  const bcrypt = require('bcryptjs');
-  const passwordHash = await bcrypt.hash(password, 12);
+    if (existingUser) {
+      return NextResponse.json({ 
+        error: 'User with this email already exists' 
+      }, { status: 409 });
+    }
 
-  // Create player with club association
-  const player = await prisma.user.create({
-    data: {
-      email: email.toLowerCase(),
-      passwordHash,
-      userType: 'player',
-      isVerified: true,
-      profile: {
-        create: {
-          firstName,
-          lastName,
-          country,
-          phone,
-          metadata: {
-            ...metadata,
-            clubId: params.clubId,
-            clubName: club.profile?.firstName || club.email
+    // Hash password
+    const bcrypt = require('bcryptjs');
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    // Create player with club association
+    const player = await prisma.user.create({
+      data: {
+        email: email.toLowerCase(),
+        passwordHash,
+        userType: 'player',
+        isVerified: true,
+        profile: {
+          create: {
+            firstName,
+            lastName,
+            country,
+            phone,
+            metadata: {
+              ...metadata,
+              clubId: params.clubId,
+              clubName: club.profile?.firstName || club.email,
+              joinDate: new Date().toISOString(),
+              status: metadata.status || 'active'
+            }
           }
         }
+      },
+      include: {
+        profile: true
       }
-    },
-    include: {
-      profile: true
-    }
-  });
+    });
 
-  return NextResponse.json({
-    member: {
-      id: player.id,
-      email: player.email,
-      firstName: player.profile?.firstName,
-      lastName: player.profile?.lastName,
-      country: player.profile?.country,
-      phone: player.profile?.phone,
-      isVerified: player.isVerified,
-      createdAt: player.createdAt,
-      metadata: player.profile?.metadata
-    }
-  }, { status: 201 });
-});
+    return NextResponse.json({
+      member: {
+        id: player.id,
+        email: player.email,
+        firstName: player.profile?.firstName,
+        lastName: player.profile?.lastName,
+        country: player.profile?.country,
+        phone: player.profile?.phone,
+        isVerified: player.isVerified,
+        createdAt: player.createdAt,
+        metadata: player.profile?.metadata
+      }
+    }, { status: 201 });
 
-// PUT /api/oauth/clubs/[clubId]/members/[memberId] - Modifier un membre
-export const PUT = requireOAuthScope(['clubs:write', 'users:write'])(async (
-  request: NextRequest,
-  context,
-  { params }: { params: { clubId: string; memberId: string } }
-) => {
-  const body = await request.json();
-  const { firstName, lastName, country, phone, metadata = {} } = body;
-
-  // Vérifier que le club existe
-  const club = await prisma.user.findFirst({
-    where: { 
-      id: params.clubId,
-      userType: 'club'
-    }
-  });
-
-  if (!club) {
-    return NextResponse.json({ error: 'Club not found' }, { status: 404 });
+  } catch (error) {
+    console.error('Add member error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-
-  // Vérifier que le membre existe et appartient au club
-  const member = await prisma.user.findFirst({
-    where: {
-      id: params.memberId,
-      userType: 'player',
-      profile: {
-        metadata: {
-          path: ['clubId'],
-          equals: params.clubId
-        }
-      }
-    },
-    include: { profile: true }
-  });
-
-  if (!member) {
-    return NextResponse.json({ error: 'Member not found in this club' }, { status: 404 });
-  }
-
-  // Mettre à jour le profil
-  const updatedProfile = await prisma.userProfile.update({
-    where: { userId: params.memberId },
-    data: {
-      firstName: firstName || member.profile?.firstName,
-      lastName: lastName || member.profile?.lastName,
-      country: country || member.profile?.country,
-      phone: phone || member.profile?.phone,
-      metadata: {
-        ...member.profile?.metadata,
-        ...metadata,
-        clubId: params.clubId, // Maintenir l'association au club
-        clubName: club.profile?.firstName || club.email
-      }
-    }
-  });
-
-  return NextResponse.json({
-    member: {
-      id: member.id,
-      email: member.email,
-      firstName: updatedProfile.firstName,
-      lastName: updatedProfile.lastName,
-      country: updatedProfile.country,
-      phone: updatedProfile.phone,
-      isVerified: member.isVerified,
-      metadata: updatedProfile.metadata
-    }
-  });
-});
-
-// DELETE /api/oauth/clubs/[clubId]/members/[memberId] - Retirer un membre
-export const DELETE = requireOAuthScope(['clubs:write'])(async (
-  request: NextRequest,
-  context,
-  { params }: { params: { clubId: string; memberId: string } }
-) => {
-  // Vérifier que le membre existe et appartient au club
-  const member = await prisma.user.findFirst({
-    where: {
-      id: params.memberId,
-      userType: 'player',
-      profile: {
-        metadata: {
-          path: ['clubId'],
-          equals: params.clubId
-        }
-      }
-    },
-    include: { profile: true }
-  });
-
-  if (!member) {
-    return NextResponse.json({ error: 'Member not found in this club' }, { status: 404 });
-  }
-
-  // Retirer l'association au club (ne pas supprimer l'utilisateur)
-  await prisma.userProfile.update({
-    where: { userId: params.memberId },
-    data: {
-      metadata: {
-        ...member.profile?.metadata,
-        clubId: null,
-        clubName: null,
-        status: 'free_agent'
-      }
-    }
-  });
-
-  return NextResponse.json({ success: true });
 });

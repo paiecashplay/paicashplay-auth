@@ -33,13 +33,18 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   
-  // CORS for OAuth endpoints
-  if (request.nextUrl.pathname.startsWith('/api/auth/')) {
+  // CORS for OAuth, auth and public endpoints
+  if (request.nextUrl.pathname.startsWith('/api/auth/') || 
+      request.nextUrl.pathname.startsWith('/api/oauth/') || 
+      request.nextUrl.pathname.startsWith('/api/public/')) {
     if (origin && ALLOWED_ORIGINS.includes(origin)) {
       response.headers.set('Access-Control-Allow-Origin', origin);
+    } else {
+      // Allow all origins for OAuth endpoints in development
+      response.headers.set('Access-Control-Allow-Origin', '*');
     }
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
     response.headers.set('Access-Control-Allow-Credentials', 'true');
     
     if (request.method === 'OPTIONS') {
@@ -49,10 +54,11 @@ export async function middleware(request: NextRequest) {
     // Rate limiting is handled in individual API routes
   }
   
-  // CSRF protection for forms (skip for admin and auth endpoints)
+  // CSRF protection for forms (skip for admin, auth, and oauth endpoints)
   if (request.method === 'POST' && 
       !request.nextUrl.pathname.startsWith('/api/auth/') && 
-      !request.nextUrl.pathname.startsWith('/api/admin/')) {
+      !request.nextUrl.pathname.startsWith('/api/admin/') && 
+      !request.nextUrl.pathname.startsWith('/api/oauth/')) {
     const csrfToken = request.headers.get('x-csrf-token');
     const sessionCSRF = request.cookies.get('csrf-token')?.value;
     

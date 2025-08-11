@@ -37,7 +37,8 @@ export const GET = requireOAuthScope(['users:read'])(async (request: NextRequest
         firstName: user.profile.firstName,
         lastName: user.profile.lastName,
         country: user.profile.country,
-        phone: user.profile.phone
+        phone: user.profile.phone,
+        metadata: user.profile.metadata
       } : null
     })),
     pagination: {

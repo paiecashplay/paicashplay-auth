@@ -3,8 +3,9 @@ import { cookies } from 'next/headers';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { provider: string } }
+  { params }: { params: Promise<{ provider: string }> }
 ) {
+  const resolvedParams = await params;
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const state = searchParams.get('state');
@@ -32,7 +33,7 @@ export async function GET(
     console.log('OAuth session from state:', oauthSession);
 
     // Échanger le code contre un access token
-    const accessToken = await exchangeCodeForToken(params.provider, code, request.url);
+    const accessToken = await exchangeCodeForToken(resolvedParams.provider, code, request.url);
     
     if (!accessToken) {
       return NextResponse.redirect(new URL('/login?error=Failed to get access token', request.url));
@@ -43,7 +44,7 @@ export async function GET(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        provider: params.provider,
+        provider: resolvedParams.provider,
         access_token: accessToken,
         mode
       })

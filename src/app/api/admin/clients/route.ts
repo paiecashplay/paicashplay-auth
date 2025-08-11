@@ -34,7 +34,7 @@ export const POST = requireAdmin(async (request: NextRequest, admin: any) => {
       'federations:read'
     ];
     
-    const invalidScopes = allowedScopes.filter(scope => !validScopes.includes(scope));
+    const invalidScopes = allowedScopes.filter((scope: string) => !validScopes.includes(scope));
     if (invalidScopes.length > 0) {
       return NextResponse.json({ 
         error: `Invalid scopes: ${invalidScopes.join(', ')}` 

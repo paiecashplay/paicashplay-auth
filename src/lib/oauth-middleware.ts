@@ -10,8 +10,24 @@ export interface OAuthContext {
 }
 
 export function requireOAuthScope(requiredScopes: string[]) {
-  return function(handler: (request: NextRequest, context: OAuthContext) => Promise<NextResponse>) {
-    return async (request: NextRequest) => {
+  return function(handler: (request: NextRequest, context: OAuthContext, routeParams?: any) => Promise<NextResponse>) {
+    return async (request: NextRequest, routeParams?: any) => {
+      // Handle CORS preflight requests
+      if (request.method === 'OPTIONS') {
+        return new NextResponse(null, {
+          status: 200,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+          },
+        });
+      }
+      
+      // Await params if it's a Promise
+      const resolvedParams = routeParams && typeof routeParams.params?.then === 'function' 
+        ? { params: await routeParams.params } 
+        : routeParams;
       try {
         const authHeader = request.headers.get('authorization');
         
@@ -42,7 +58,13 @@ export function requireOAuthScope(requiredScopes: string[]) {
         // Verify JWT signature
         try {
           jwt.verify(token, process.env.JWT_SECRET!);
-        } catch (error) {
+        } catch (error: any) {
+          if (error.name === 'TokenExpiredError') {
+            return NextResponse.json({ 
+              error: 'token_expired',
+              error_description: 'The access token has expired. Please refresh your token.' 
+            }, { status: 401 });
+          }
           return NextResponse.json({ error: 'Invalid token signature' }, { status: 401 });
         }
         
@@ -76,7 +98,14 @@ export function requireOAuthScope(requiredScopes: string[]) {
           scopes: tokenScopes
         };
         
-        return handler(request, context);
+        const response = await handler(request, context, resolvedParams);
+        
+        // Add CORS headers to response
+        response.headers.set('Access-Control-Allow-Origin', '*');
+        response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+        
+        return response;
         
       } catch (error) {
         console.error('OAuth middleware error:', error);

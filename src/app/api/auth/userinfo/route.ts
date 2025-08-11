@@ -12,10 +12,22 @@ export async function GET(request: NextRequest) {
     const token = authHeader.substring(7);
     
     // Verify JWT token
-    const payload = await verifyJWT(token);
-    if (!payload || !payload.sub) {
+    try {
+      const payload = await verifyJWT(token);
+      if (!payload || !payload.sub) {
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      }
+    } catch (error: any) {
+      if (error.code === 'ERR_JWT_EXPIRED') {
+        return NextResponse.json({ 
+          error: 'token_expired',
+          error_description: 'The access token has expired. Please refresh your token.' 
+        }, { status: 401 });
+      }
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
+    
+    const payload = await verifyJWT(token);
 
     // Get user info
     const user = await prisma.user.findUnique({
@@ -77,8 +89,14 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(userInfo);
-  } catch (error) {
+  } catch (error: any) {
     console.error('UserInfo error:', error);
+    if (error.code === 'ERR_JWT_EXPIRED') {
+      return NextResponse.json({ 
+        error: 'token_expired',
+        error_description: 'The access token has expired. Please refresh your token.' 
+      }, { status: 401 });
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

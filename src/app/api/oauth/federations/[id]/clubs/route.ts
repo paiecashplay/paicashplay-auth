@@ -5,8 +5,9 @@ import { prisma } from '@/lib/prisma';
 // GET /api/oauth/federations/[id]/clubs - Lister les clubs d'une fédération
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   const handler = requireOAuthScope(['federations:read', 'clubs:read'])(async (req: NextRequest, context) => {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -16,7 +17,7 @@ export async function GET(
       // Vérifier que la fédération existe
       const federation = await prisma.user.findFirst({
         where: { 
-          id: params.id,
+          id: resolvedParams.id,
           userType: 'federation'
         },
         include: { profile: true }
@@ -59,7 +60,7 @@ export async function GET(
               userType: 'player',
               profile: {
                 metadata: {
-                  path: ['clubId'],
+                  path: '$.clubId',
                   equals: club.id
                 }
               }
@@ -69,8 +70,8 @@ export async function GET(
           return {
             id: club.id,
             name: club.profile?.firstName || club.email,
-            league: club.profile?.metadata?.league,
-            city: club.profile?.metadata?.city,
+            league: (club.profile?.metadata as any)?.league,
+            city: (club.profile?.metadata as any)?.city,
             membersCount: memberCount
           };
         })

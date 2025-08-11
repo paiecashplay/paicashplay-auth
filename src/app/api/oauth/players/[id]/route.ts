@@ -3,13 +3,17 @@ import { requireOAuthScope } from '@/lib/oauth-middleware';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/oauth/players/[id] - Obtenir un joueur spécifique
-export async function GET(
+export const GET = requireOAuthScope(['players:read'])(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const handler = requireOAuthScope(['players:read'])(async (req: NextRequest, context) => {
-    try {
-      const player = await prisma.user.findFirst({
+  context,
+  routeParams
+) => {
+  const { params } = routeParams || { params: {} };
+  if (!params?.id) {
+    return NextResponse.json({ error: 'Player ID required' }, { status: 400 });
+  }
+  try {
+    const player = await prisma.user.findFirst({
         where: {
           id: params.id,
           userType: 'player'
@@ -33,9 +37,9 @@ export async function GET(
           phone: player.profile?.phone,
           isVerified: player.isVerified,
           createdAt: player.createdAt,
-          club: player.profile?.metadata?.clubId ? {
-            id: player.profile.metadata.clubId,
-            name: player.profile.metadata.clubName
+          club: (player.profile?.metadata as any)?.clubId ? {
+            id: (player.profile?.metadata as any).clubId,
+            name: (player.profile?.metadata as any).clubName
           } : null,
           profile: {
             phone: player.profile?.phone,
@@ -43,11 +47,8 @@ export async function GET(
           }
         }
       });
-    } catch (error) {
-      console.error('Get player error:', error);
-      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-    }
-  });
-
-  return handler(request);
-}
+  } catch (error) {
+    console.error('Get player error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+});

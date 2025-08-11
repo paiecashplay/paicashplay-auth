@@ -485,15 +485,15 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Sessions actives</span>
-                <span className="font-semibold text-paiecash">{user._count.sessions}</span>
+                <span className="font-semibold text-paiecash">{user._count?.sessions || 0}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Vérifications email</span>
-                <span className="font-semibold text-gray-900">{user._count.emailVerifications}</span>
+                <span className="font-semibold text-gray-900">{user._count?.emailVerifications || 0}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Réinitialisations mot de passe</span>
-                <span className="font-semibold text-gray-900">{user._count.passwordResets}</span>
+                <span className="font-semibold text-gray-900">{user._count?.passwordResets || 0}</span>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                 <span className="text-sm text-gray-600">Membre depuis</span>
@@ -508,7 +508,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
           <div className="card-elevated">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Sessions récentes</h3>
             <div className="space-y-3">
-              {user.sessions.length > 0 ? (
+              {user.sessions && user.sessions.length > 0 ? (
                 user.sessions.map((session) => (
                   <div key={session.id} className="bg-gray-50 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">

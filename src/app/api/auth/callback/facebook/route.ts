@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { IdentityProviderService } from '@/lib/identity-providers';
 import { AuthService } from '@/lib/auth-service';
 import { prisma } from '@/lib/prisma';
+import { createRedirectUrl } from '@/lib/url-utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,21 +12,21 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error');
 
     if (error) {
-      return NextResponse.redirect(new URL(`/login?error=${error}`, request.url));
+      return NextResponse.redirect(createRedirectUrl(`/login?error=${error}`));
     }
 
     if (!code || !state) {
-      return NextResponse.redirect(new URL('/login?error=missing_params', request.url));
+      return NextResponse.redirect(createRedirectUrl('/login?error=missing_params'));
     }
 
     const provider = await IdentityProviderService.getProvider('facebook');
     if (!provider) {
-      return NextResponse.redirect(new URL('/login?error=provider_not_found', request.url));
+      return NextResponse.redirect(createRedirectUrl('/login?error=provider_not_found'));
     }
 
     const tokens = await IdentityProviderService.exchangeCodeForToken(provider, code);
     if (!tokens.access_token) {
-      return NextResponse.redirect(new URL('/login?error=token_exchange_failed', request.url));
+      return NextResponse.redirect(createRedirectUrl('/login?error=token_exchange_failed'));
     }
 
     const profile = await IdentityProviderService.getUserProfile(provider, tokens.access_token);
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     try {
       stateData = JSON.parse(atob(state));
     } catch {
-      return NextResponse.redirect(new URL('/login?error=invalid_state', request.url));
+      return NextResponse.redirect(createRedirectUrl('/login?error=invalid_state'));
     }
 
     const existingUser = await IdentityProviderService.findUserBySocialAccount(provider.id, profile.id);
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
         redirectUrl = `/api/auth/continue?oauth_session=${oauthSession}`;
       }
       
-      const response = NextResponse.redirect(new URL(redirectUrl, request.url));
+      const response = NextResponse.redirect(createRedirectUrl(redirectUrl));
       response.cookies.set('session_token', sessionToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -88,10 +89,10 @@ export async function GET(request: NextRequest) {
       };
       
       const tempToken = btoa(JSON.stringify(signupData));
-      return NextResponse.redirect(new URL(`/signup?social=${tempToken}`, request.url));
+      return NextResponse.redirect(createRedirectUrl(`/signup?social=${tempToken}`));
     }
   } catch (error) {
     console.error('Facebook callback error:', error);
-    return NextResponse.redirect(new URL('/login?error=callback_failed', request.url));
+    return NextResponse.redirect(createRedirectUrl('/login?error=callback_failed'));
   }
 }

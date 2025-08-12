@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OAuthService } from '@/lib/oauth';
 import { cookies } from 'next/headers';
+import { createRedirectUrl, createAbsoluteUrl } from '@/lib/url-utils';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -24,12 +25,12 @@ export async function GET(request: NextRequest) {
   // Validate client
   const client = await OAuthService.validateClient(client_id);
   if (!client) {
-    return NextResponse.redirect(new URL('/error?error=invalid_client&description=Client non trouvé', request.url));
+    return NextResponse.redirect(createRedirectUrl('/error?error=invalid_client&description=Client non trouvé'));
   }
   
   // Validate redirect URI
   if (!OAuthService.validateRedirectUri(client, redirect_uri)) {
-    return NextResponse.redirect(new URL('/error?error=invalid_redirect_uri&description=URL de redirection non autorisée', request.url));
+    return NextResponse.redirect(createRedirectUrl('/error?error=invalid_redirect_uri&description=URL de redirection non autorisée'));
   }
   
   // Validate scope
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
   
   if (!sessionToken || prompt === 'login') {
     // Redirect to login with session ID
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = createAbsoluteUrl('/login');
     loginUrl.searchParams.set('oauth_session', oauthSessionId);
     
     // Si prompt=login, forcer la déconnexion d'abord
@@ -105,14 +106,14 @@ export async function GET(request: NextRequest) {
       cookieStore.delete('session_token');
       cookieStore.delete('session-token');
       
-      const loginUrl = new URL('/login', request.url);
+      const loginUrl = createAbsoluteUrl('/login');
       loginUrl.searchParams.set('oauth_session', oauthSessionId);
       
       return NextResponse.redirect(loginUrl);
     }
   } catch (error) {
     // Invalid session, redirect to login
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = createAbsoluteUrl('/login');
     loginUrl.searchParams.set('oauth_session', oauthSessionId);
     
     return NextResponse.redirect(loginUrl);
@@ -124,7 +125,7 @@ export async function GET(request: NextRequest) {
     cookieStore.delete('session_token');
     cookieStore.delete('session-token');
     
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = createAbsoluteUrl('/login');
     loginUrl.searchParams.set('oauth_session', oauthSessionId);
     
     console.log('🔄 Forced re-authentication due to prompt=login');
@@ -132,7 +133,7 @@ export async function GET(request: NextRequest) {
   }
   
   // User is already authenticated - redirect to continue with OAuth session
-  const continueUrl = new URL('/api/auth/continue', request.url);
+  const continueUrl = createAbsoluteUrl('/api/auth/continue');
   continueUrl.searchParams.set('oauth_session', oauthSessionId);
   
   return NextResponse.redirect(continueUrl);

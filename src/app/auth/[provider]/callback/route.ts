@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { createRedirectUrl } from '@/lib/url-utils';
 
 export async function GET(
   request: NextRequest,
@@ -12,11 +13,11 @@ export async function GET(
   const error = searchParams.get('error');
 
   if (error) {
-    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error)}`, request.url));
+    return NextResponse.redirect(createRedirectUrl(`/login?error=${encodeURIComponent(error)}`));
   }
 
   if (!code || !state) {
-    return NextResponse.redirect(new URL('/login?error=Invalid callback', request.url));
+    return NextResponse.redirect(createRedirectUrl('/login?error=Invalid callback'));
   }
 
   try {
@@ -26,21 +27,21 @@ export async function GET(
       stateData = JSON.parse(atob(state));
     } catch (e) {
       console.error('Failed to decode state:', e);
-      return NextResponse.redirect(new URL('/login?error=Invalid state', request.url));
+      return NextResponse.redirect(createRedirectUrl('/login?error=Invalid state'));
     }
     
     const { mode, oauthSession } = stateData;
     console.log('OAuth session from state:', oauthSession);
 
     // Échanger le code contre un access token
-    const accessToken = await exchangeCodeForToken(resolvedParams.provider, code, request.url);
+    const accessToken = await exchangeCodeForToken(resolvedParams.provider, code);
     
     if (!accessToken) {
-      return NextResponse.redirect(new URL('/login?error=Failed to get access token', request.url));
+      return NextResponse.redirect(createRedirectUrl('/login?error=Failed to get access token'));
     }
 
     // Authentifier avec notre API
-    const authResponse = await fetch(new URL('/api/auth/social', request.url), {
+    const authResponse = await fetch(createRedirectUrl('/api/auth/social'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -53,7 +54,7 @@ export async function GET(
     const authData = await authResponse.json();
 
     if (!authResponse.ok) {
-      return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(authData.error)}`, request.url));
+      return NextResponse.redirect(createRedirectUrl(`/login?error=${encodeURIComponent(authData.error)}`));
     }
 
     console.log('🔍 Social auth successful, user:', authData.user?.email);
@@ -61,21 +62,21 @@ export async function GET(
     // Si c'est un flux OAuth, rediriger vers l'endpoint continue
     if (oauthSession) {
       console.log('🔄 OAuth flow detected, redirecting to continue with session:', oauthSession);
-      return NextResponse.redirect(new URL(`/api/auth/continue?oauth_session=${oauthSession}`, request.url));
+      return NextResponse.redirect(createRedirectUrl(`/api/auth/continue?oauth_session=${oauthSession}`));
     }
 
     // Sinon, rediriger vers le dashboard
     console.log('🔄 Normal flow, redirecting to dashboard');
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(createRedirectUrl('/dashboard'));
 
   } catch (error) {
     console.error('Social callback error:', error);
-    return NextResponse.redirect(new URL('/login?error=Authentication failed', request.url));
+    return NextResponse.redirect(createRedirectUrl('/login?error=Authentication failed'));
   }
 }
 
-async function exchangeCodeForToken(provider: string, code: string, baseUrl: string): Promise<string | null> {
-  const redirectUri = new URL(`/auth/${provider}/callback`, baseUrl).toString();
+async function exchangeCodeForToken(provider: string, code: string): Promise<string | null> {
+  const redirectUri = createRedirectUrl(`/auth/${provider}/callback`);
   
   try {
     let tokenUrl: string;

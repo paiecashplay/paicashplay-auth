@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createRedirectUrl } from '@/lib/url-utils';
 // Rate limiting will be handled in API routes for now
 
 const ALLOWED_ORIGINS = [
@@ -80,13 +81,13 @@ export async function middleware(request: NextRequest) {
   
   // OAuth redirects
   if (request.nextUrl.pathname === '/oauth/authorize') {
-    return NextResponse.redirect(new URL('/api/auth/authorize', request.url));
+    return NextResponse.redirect(createRedirectUrl('/api/auth/authorize'));
   }
   if (request.nextUrl.pathname === '/oauth/token') {
-    return NextResponse.redirect(new URL('/api/auth/token', request.url));
+    return NextResponse.redirect(createRedirectUrl('/api/auth/token'));
   }
   if (request.nextUrl.pathname === '/oauth/userinfo') {
-    return NextResponse.redirect(new URL('/api/auth/userinfo', request.url));
+    return NextResponse.redirect(createRedirectUrl('/api/auth/userinfo'));
   }
   
   return response;

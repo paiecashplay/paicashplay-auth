@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
+import { createRedirectUrl } from '@/lib/url-utils';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const oauthSessionId = searchParams.get('oauth_session');
   
   if (!oauthSessionId) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(createRedirectUrl('/login'));
   }
   
   // Get OAuth session
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
   });
   
   if (!oauthSession) {
-    return NextResponse.redirect(new URL('/login?error=Session expirée', request.url));
+    return NextResponse.redirect(createRedirectUrl('/login?error=Session expirée'));
   }
   
   // Check if user is authenticated
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
   const sessionToken = cookieStore.get('session_token')?.value || cookieStore.get('session-token')?.value;
   
   if (!sessionToken) {
-    return NextResponse.redirect(new URL(`/login?oauth_session=${oauthSessionId}`, request.url));
+    return NextResponse.redirect(createRedirectUrl(`/login?oauth_session=${oauthSessionId}`));
   }
   
   // Validate session and get user
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
     const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET!) as any;
     userId = decoded.userId;
   } catch (error) {
-    return NextResponse.redirect(new URL(`/login?oauth_session=${oauthSessionId}`, request.url));
+    return NextResponse.redirect(createRedirectUrl(`/login?oauth_session=${oauthSessionId}`));
   }
   
   // Generate authorization code

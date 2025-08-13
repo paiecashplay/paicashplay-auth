@@ -38,7 +38,12 @@ export async function GET(request: NextRequest) {
     const [ambassadors, total] = await Promise.all([
       prisma.user.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          email: true,
+          isVerified: true,
+          isActive: true,
+          createdAt: true,
           profile: {
             select: {
               firstName: true,
@@ -50,14 +55,6 @@ export async function GET(request: NextRequest) {
               metadata: true
             }
           }
-        },
-        select: {
-          id: true,
-          email: true,
-          isVerified: true,
-          isActive: true,
-          createdAt: true,
-          profile: true
         },
         skip,
         take: limit,

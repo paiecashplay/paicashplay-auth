@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       lastName, 
       verificationToken, 
       userType as any,
-      oauthSession
+      oauthSession || undefined
     );
     
     return NextResponse.json({

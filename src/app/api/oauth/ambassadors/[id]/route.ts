@@ -2,20 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateOAuthToken } from '@/lib/oauth-middleware';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const validation = await validateOAuthToken(request, ['profile', 'ambassadors:read']);
     if (!validation.valid) {
       return NextResponse.json({ error: validation.error }, { status: validation.status });
     }
 
+    const { id } = await params;
+
     const ambassador = await prisma.user.findFirst({
       where: {
-        id: params.id,
+        id,
         userType: 'affiliate'
-      },
-      include: {
-        profile: true
       },
       select: {
         id: true,

@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       user.profile?.lastName || '',
       verificationToken,
       user.userType as any,
-      oauthSession
+      oauthSession || undefined
     );
     
     return NextResponse.json({

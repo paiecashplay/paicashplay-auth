@@ -14,16 +14,8 @@ export async function ensureDbInitialized() {
     // Test connection and auto-create database
     await prisma.$connect();
     
-    // Push schema (creates tables if not exist)
-    try {
-      const { execSync } = require('child_process');
-      execSync('npx prisma db push --accept-data-loss', { 
-        stdio: 'pipe',
-        cwd: process.cwd()
-      });
-    } catch (error) {
-      console.warn('Schema push failed, continuing...', error);
-    }
+    // Schema should be pushed during deployment/startup
+    console.log('Database connection established');
     
     // Seed data if needed
     await seedDefaultData(prisma);

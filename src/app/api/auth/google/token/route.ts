@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         client_secret: googleProvider.clientSecret,
         code,
         grant_type: 'authorization_code',
-        redirect_uri: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/google/callback`
+        redirect_uri: `${process.env.NEXTAUTH_URL}/auth/google/callback`
       })
     });
 

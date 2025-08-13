@@ -24,15 +24,21 @@ export class EmailService {
     });
   }
 
-  static async sendVerificationEmail(email: string, firstName: string, lastName: string, token: string, userType: UserType) {
-    const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
+  static async sendVerificationEmail(email: string, firstName: string, lastName: string, token: string, userType: UserType, oauthSession?: string) {
+    const verificationUrl = new URL(`${process.env.NEXTAUTH_URL}/verify-email`);
+    verificationUrl.searchParams.set('token', token);
+    
+    // Ajouter oauth_session si présent
+    if (oauthSession) {
+      verificationUrl.searchParams.set('oauth_session', oauthSession);
+    }
     
     const html = await EmailTemplateService.getVerificationEmail({
       firstName,
       lastName,
       email,
       userType,
-      verificationUrl
+      verificationUrl: verificationUrl.toString()
     });
     
     const transporter = await this.getTransporter();

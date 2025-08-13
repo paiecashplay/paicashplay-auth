@@ -108,6 +108,10 @@ export async function POST(request: NextRequest) {
     
     console.log('Social complete-signup - Session created for user:', user.email);
 
+    // Récupérer oauth_session depuis la requête
+    const url = new URL(request.url);
+    const oauthSession = url.searchParams.get('oauth_session');
+
     return NextResponse.json({
       success: true,
       user: {
@@ -117,7 +121,8 @@ export async function POST(request: NextRequest) {
         isVerified: user.isVerified,
         profile: user.profile
       },
-      message: 'Inscription réussie avec votre compte social'
+      message: 'Inscription réussie avec votre compte social',
+      oauthSession
     });
 
   } catch (error) {

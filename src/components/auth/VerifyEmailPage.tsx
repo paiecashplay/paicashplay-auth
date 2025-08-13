@@ -50,23 +50,14 @@ function VerifyEmailContent() {
         
         // Redirection après 3 secondes
         setTimeout(() => {
-          const clientId = searchParams.get('client_id');
-          const redirectUri = searchParams.get('redirect_uri');
-          const scope = searchParams.get('scope');
-          const state = searchParams.get('state');
+          const oauthSession = searchParams.get('oauth_session');
           
-          if (clientId && redirectUri) {
-            // OAuth flow - redirect to authorize endpoint
-            const authorizeUrl = new URL('/api/auth/authorize', window.location.origin);
-            authorizeUrl.searchParams.set('response_type', 'code');
-            authorizeUrl.searchParams.set('client_id', clientId);
-            authorizeUrl.searchParams.set('redirect_uri', redirectUri);
-            if (scope) authorizeUrl.searchParams.set('scope', scope);
-            if (state) authorizeUrl.searchParams.set('state', state);
-            
-            window.location.href = authorizeUrl.toString();
+          if (oauthSession) {
+            // Flux OAuth - rediriger vers continue avec oauth_session
+            window.location.href = `/api/auth/continue?oauth_session=${oauthSession}`;
           } else {
-            router.push('/login');
+            // Pas de flux OAuth - rediriger vers dashboard
+            router.push('/dashboard');
           }
         }, 3000);
       } else {
@@ -101,7 +92,15 @@ function VerifyEmailContent() {
     setResendLoading(true);
     
     try {
-      const response = await fetch('/api/auth/resend-verification', {
+      // Préparer l'URL avec oauth_session
+      const apiUrl = new URL('/api/auth/resend-verification', window.location.origin);
+      const oauthSession = searchParams.get('oauth_session');
+      
+      if (oauthSession) {
+        apiUrl.searchParams.set('oauth_session', oauthSession);
+      }
+      
+      const response = await fetch(apiUrl.toString(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: effectiveEmail })

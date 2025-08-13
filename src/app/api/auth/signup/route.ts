@@ -46,8 +46,25 @@ export async function POST(request: NextRequest) {
       metadata
     });
     
+    // Récupérer les paramètres OAuth depuis l'URL
+    const url = new URL(request.url);
+    const clientId = url.searchParams.get('client_id');
+    const redirectUri = url.searchParams.get('redirect_uri');
+    const scope = url.searchParams.get('scope');
+    const state = url.searchParams.get('state');
+    
+    // Récupérer oauth_session depuis l'URL
+    const oauthSession = url.searchParams.get('oauth_session');
+    
     // Send verification email
-    await EmailService.sendVerificationEmail(email, firstName, lastName, verificationToken, userType as any);
+    await EmailService.sendVerificationEmail(
+      email, 
+      firstName, 
+      lastName, 
+      verificationToken, 
+      userType as any,
+      oauthSession
+    );
     
     return NextResponse.json({
       success: true,

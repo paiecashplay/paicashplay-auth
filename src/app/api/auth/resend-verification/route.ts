@@ -49,13 +49,18 @@ export async function POST(request: NextRequest) {
       }
     });
     
+    // Récupérer oauth_session depuis l'URL
+    const url = new URL(request.url);
+    const oauthSession = url.searchParams.get('oauth_session');
+    
     // Send verification email
     await EmailService.sendVerificationEmail(
       user.email,
       user.profile?.firstName || 'Utilisateur',
       user.profile?.lastName || '',
       verificationToken,
-      user.userType as any
+      user.userType as any,
+      oauthSession
     );
     
     return NextResponse.json({

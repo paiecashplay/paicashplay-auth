@@ -136,6 +136,7 @@ export async function GET(request: NextRequest) {
   const continueUrl = createAbsoluteUrl('/api/auth/continue');
   continueUrl.searchParams.set('oauth_session', oauthSessionId);
   
+  console.log('✅ User authenticated, redirecting to continue:', continueUrl.toString());
   return NextResponse.redirect(continueUrl);
 }
 

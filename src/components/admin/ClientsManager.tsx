@@ -231,6 +231,48 @@ export default function ClientsManager() {
               </div>
 
               <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Scopes autorisés</label>
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-gray-300 rounded p-3">
+                  {[
+                    { id: 'openid', name: 'OpenID Connect', required: true },
+                    { id: 'profile', name: 'Profil utilisateur' },
+                    { id: 'email', name: 'Adresse email' },
+                    { id: 'users:read', name: 'Lecture utilisateurs' },
+                    { id: 'users:write', name: 'Écriture utilisateurs' },
+                    { id: 'clubs:read', name: 'Lecture clubs' },
+                    { id: 'clubs:write', name: 'Écriture clubs' },
+                    { id: 'clubs:members', name: 'Membres des clubs' },
+                    { id: 'players:read', name: 'Lecture joueurs' },
+                    { id: 'players:write', name: 'Écriture joueurs' },
+                    { id: 'federations:read', name: 'Lecture fédérations' },
+                    { id: 'ambassadors:read', name: 'Lecture ambassadeurs' },
+                    { id: 'ambassadors:write', name: 'Écriture ambassadeurs' }
+                  ].map((scope) => (
+                    <label key={scope.id} className="flex items-center space-x-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={formData.allowedScopes.includes(scope.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData({ ...formData, allowedScopes: [...formData.allowedScopes, scope.id] });
+                          } else if (!scope.required) {
+                            setFormData({ ...formData, allowedScopes: formData.allowedScopes.filter(s => s !== scope.id) });
+                          }
+                        }}
+                        disabled={scope.required}
+                        className="rounded"
+                      />
+                      <span className={scope.required ? 'text-gray-500' : ''}>
+                        {scope.name}
+                        {scope.required && <span className="text-red-500 ml-1">*</span>}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">* Scopes requis pour le fonctionnement OAuth</p>
+              </div>
+
+              <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Redirect URIs</label>
                 {formData.redirectUris.map((uri, index) => (
                   <div key={index} className="flex mb-2">

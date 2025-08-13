@@ -39,6 +39,7 @@ export default function AdminDashboard() {
       case 'club': return 'fas fa-users';
       case 'federation': return 'fas fa-flag';
       case 'company': return 'fas fa-briefcase';
+      case 'affiliate': return 'fas fa-star';
       default: return 'fas fa-user';
     }
   };
@@ -50,6 +51,7 @@ export default function AdminDashboard() {
       case 'club': return 'text-green-600 bg-green-100';
       case 'federation': return 'text-purple-600 bg-purple-100';
       case 'company': return 'text-indigo-600 bg-indigo-100';
+      case 'affiliate': return 'text-yellow-600 bg-yellow-100';
       default: return 'text-gray-600 bg-gray-100';
     }
   };
@@ -144,6 +146,7 @@ export default function AdminDashboard() {
                     {stat.userType === 'club' && 'Club'}
                     {stat.userType === 'federation' && 'Fédération'}
                     {stat.userType === 'company' && 'Société'}
+                    {stat.userType === 'affiliate' && 'Ambassadeur'}
                   </span>
                 </div>
                 <div className="flex items-center">
@@ -187,10 +190,10 @@ export default function AdminDashboard() {
                 <p className="font-medium text-gray-900">Logs Système</p>
               </div>
             </a>
-            <a href="/admin/settings" className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <a href="/admin/services" className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
               <div className="text-center">
-                <i className="fas fa-cog text-2xl text-orange-600 mb-2"></i>
-                <p className="font-medium text-gray-900">Configuration</p>
+                <i className="fas fa-external-link-alt text-2xl text-indigo-600 mb-2"></i>
+                <p className="font-medium text-gray-900">Services Externes</p>
               </div>
             </a>
           </div>

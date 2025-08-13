@@ -3,15 +3,16 @@
  */
 
 export function getBaseUrl(): string {
-  // Priorité à NEXTAUTH_URL pour les environnements avec proxy
-  if (process.env.NEXTAUTH_URL) {
+  // En production, NEXTAUTH_URL est OBLIGATOIRE
+  if (process.env.NODE_ENV === 'production') {
+    if (!process.env.NEXTAUTH_URL) {
+      throw new Error('NEXTAUTH_URL doit être définie en production');
+    }
     return process.env.NEXTAUTH_URL;
   }
   
-  // Fallback pour développement local
-  return process.env.NODE_ENV === 'production' 
-    ? 'https://auth.paiecashplay.com' 
-    : 'http://localhost:3000';
+  // En développement, utiliser NEXTAUTH_URL ou localhost
+  return process.env.NEXTAUTH_URL || 'http://localhost:3000';
 }
 
 export function createRedirectUrl(path: string): string {

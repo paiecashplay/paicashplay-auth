@@ -175,9 +175,17 @@ function LoginContent() {
             </a>
             <div className="text-gray-600 text-sm">
               Pas encore de compte ?{' '}
-              <a href="/signup" className="text-paiecash hover:text-paiecash-dark font-medium">
+              <button 
+                onClick={() => {
+                  const oauthSession = searchParams.get('oauth_session');
+                  
+                  const signupUrl = oauthSession ? `/signup?oauth_session=${oauthSession}` : '/signup';
+                  window.location.href = signupUrl;
+                }}
+                className="text-paiecash hover:text-paiecash-dark font-medium bg-transparent border-none cursor-pointer underline"
+              >
                 S'inscrire
-              </a>
+              </button>
             </div>
           </div>
         </div>

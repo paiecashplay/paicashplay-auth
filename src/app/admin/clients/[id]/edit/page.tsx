@@ -38,7 +38,9 @@ export default function EditClientPage() {
     { id: 'clubs:members', name: 'Membres clubs', description: 'Accès aux membres des clubs', category: 'clubs' },
     { id: 'players:read', name: 'Lecture joueurs', description: 'Lister les joueurs', category: 'players' },
     { id: 'players:write', name: 'Écriture joueurs', description: 'Créer/modifier des joueurs', category: 'players' },
-    { id: 'federations:read', name: 'Lecture fédérations', description: 'Lister les fédérations', category: 'federations' }
+    { id: 'federations:read', name: 'Lecture fédérations', description: 'Lister les fédérations', category: 'federations' },
+    { id: 'ambassadors:read', name: 'Lecture ambassadeurs', description: 'Lister les ambassadeurs', category: 'ambassadors' },
+    { id: 'ambassadors:write', name: 'Écriture ambassadeurs', description: 'Créer/modifier des ambassadeurs', category: 'ambassadors' }
   ];
 
   const scopeCategories = {
@@ -46,7 +48,8 @@ export default function EditClientPage() {
     users: { name: 'Utilisateurs', icon: 'fas fa-users', color: 'green' },
     clubs: { name: 'Clubs', icon: 'fas fa-futbol', color: 'purple' },
     players: { name: 'Joueurs', icon: 'fas fa-running', color: 'orange' },
-    federations: { name: 'Fédérations', icon: 'fas fa-flag', color: 'red' }
+    federations: { name: 'Fédérations', icon: 'fas fa-flag', color: 'red' },
+    ambassadors: { name: 'Ambassadeurs', icon: 'fas fa-star', color: 'yellow' }
   };
 
   useEffect(() => {

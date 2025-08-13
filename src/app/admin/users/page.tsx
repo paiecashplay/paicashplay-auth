@@ -102,6 +102,8 @@ export default function AdminUsers() {
       case 'player': return 'fas fa-running';
       case 'club': return 'fas fa-users';
       case 'federation': return 'fas fa-flag';
+      case 'company': return 'fas fa-building';
+      case 'affiliate': return 'fas fa-star';
       default: return 'fas fa-user';
     }
   };
@@ -112,7 +114,21 @@ export default function AdminUsers() {
       case 'player': return 'text-blue-600 bg-blue-100 border-blue-200';
       case 'club': return 'text-green-600 bg-green-100 border-green-200';
       case 'federation': return 'text-purple-600 bg-purple-100 border-purple-200';
+      case 'company': return 'text-indigo-600 bg-indigo-100 border-indigo-200';
+      case 'affiliate': return 'text-yellow-600 bg-yellow-100 border-yellow-200';
       default: return 'text-gray-600 bg-gray-100 border-gray-200';
+    }
+  };
+
+  const getUserTypeLabel = (type: string) => {
+    switch (type) {
+      case 'donor': return 'Donateur';
+      case 'player': return 'Licencié';
+      case 'club': return 'Club';
+      case 'federation': return 'Fédération';
+      case 'company': return 'Société';
+      case 'affiliate': return 'Ambassadeur';
+      default: return type;
     }
   };
 
@@ -237,6 +253,8 @@ export default function AdminUsers() {
           <option value="player">Joueur</option>
           <option value="club">Club</option>
           <option value="federation">Fédération</option>
+          <option value="company">Société</option>
+          <option value="affiliate">Ambassadeur</option>
         </select>
         <div className="flex items-center space-x-4">
           <button
@@ -297,7 +315,7 @@ export default function AdminUsers() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getUserTypeColor(user.user_type)}`}>
                       <i className={`${getUserTypeIcon(user.user_type)} mr-2`}></i>
-                      {user.user_type}
+                      {getUserTypeLabel(user.user_type)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth-service';
 import { EmailService } from '@/lib/email-service';
 import { prisma } from '@/lib/prisma';
+import { generateSecureToken } from '@/lib/password';
+import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,6 +47,30 @@ export async function POST(request: NextRequest) {
     
     // Verify email
     await AuthService.verifyEmail(token);
+    
+    // Créer une session pour l'utilisateur vérifié
+    const sessionToken = generateSecureToken();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    
+    await prisma.userSession.create({
+      data: {
+        userId: verification.user.id,
+        sessionToken,
+        expiresAt,
+        ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown'
+      }
+    });
+    
+    // Définir le cookie de session
+    const cookieStore = await cookies();
+    cookieStore.set('session-token', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 // 7 jours
+    });
     
     // Send account confirmed email
     await EmailService.sendAccountConfirmedEmail(

@@ -87,13 +87,14 @@ export default function NewUserPage() {
                 <i className="fas fa-tag mr-2 text-paiecash"></i>
                 Type d'utilisateur
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 {[
                   { value: 'donor', label: 'Donateur', icon: 'fas fa-heart', color: 'text-red-600' },
-                  { value: 'player', label: 'Joueur', icon: 'fas fa-running', color: 'text-blue-600' },
+                  { value: 'player', label: 'Licencié', icon: 'fas fa-running', color: 'text-blue-600' },
                   { value: 'club', label: 'Club', icon: 'fas fa-users', color: 'text-green-600' },
                   { value: 'federation', label: 'Fédération', icon: 'fas fa-flag', color: 'text-purple-600' },
-                  { value: 'company', label: 'Société', icon: 'fas fa-briefcase', color: 'text-indigo-600' }
+                  { value: 'company', label: 'Société', icon: 'fas fa-briefcase', color: 'text-indigo-600' },
+                  { value: 'affiliate', label: 'Ambassadeur', icon: 'fas fa-star', color: 'text-yellow-600' }
                 ].map((type) => (
                   <label
                     key={type.value}

@@ -182,16 +182,6 @@ export class AdminService {
       include: { profile: true }
     });
 
-    const recentSessions = await prisma.userSession.findMany({
-      take: 10,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        user: {
-          include: { profile: true }
-        }
-      }
-    });
-
     return {
       recentUsers: recentUsers.map(user => ({
         id: user.id,
@@ -200,13 +190,7 @@ export class AdminService {
         name: user.profile ? `${user.profile.firstName} ${user.profile.lastName}` : null,
         createdAt: user.createdAt
       })),
-      recentSessions: recentSessions.map(session => ({
-        id: session.id,
-        userEmail: session.user.email,
-        userName: session.user.profile ? `${session.user.profile.firstName} ${session.user.profile.lastName}` : null,
-        ipAddress: session.ipAddress,
-        createdAt: session.createdAt
-      }))
+      recentSessions: []
     };
   }
 }

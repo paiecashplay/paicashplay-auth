@@ -142,7 +142,7 @@ export default function ProfileManager() {
       case 'club': return 'Club';
       case 'federation': return 'Fédération';
       case 'company': return 'Société';
-      case 'affiliate': return 'Associé vendeur';
+      case 'affiliate': return 'Embassadeur';
       default: return userType;
     }
   };

@@ -82,7 +82,11 @@ export class IdentityProviderService {
       linkedin: 'r_liteprofile r_emailaddress'
     };
 
-    const redirectUri = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/${provider.name}/callback`;
+    const baseUrl = process.env.NEXTAUTH_URL;
+    if (!baseUrl) {
+      throw new Error('NEXTAUTH_URL doit être définie pour les providers sociaux');
+    }
+    const redirectUri = `${baseUrl}/auth/${provider.name}/callback`;
     
     const params = new URLSearchParams({
       client_id: provider.clientId,
@@ -102,7 +106,11 @@ export class IdentityProviderService {
       linkedin: 'https://www.linkedin.com/oauth/v2/accessToken'
     };
 
-    const redirectUri = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/${provider.name}/callback`;
+    const baseUrl = process.env.NEXTAUTH_URL;
+    if (!baseUrl) {
+      throw new Error('NEXTAUTH_URL doit être définie pour les providers sociaux');
+    }
+    const redirectUri = `${baseUrl}/auth/${provider.name}/callback`;
 
     const response = await fetch(tokenUrls[provider.type as keyof typeof tokenUrls], {
       method: 'POST',

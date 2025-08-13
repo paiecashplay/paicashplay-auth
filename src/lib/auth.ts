@@ -7,7 +7,7 @@ export const getUserTypeLabel = (type: UserType): string => {
     federation: 'Fédération',
     donor: 'Donateur',
     company: 'Société',
-    affiliate: 'Affilié'
+    affiliate: 'Embassadeur'
   };
   return labels[type] || type;
 };

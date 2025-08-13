@@ -17,7 +17,7 @@ const USER_TYPES = [
   { value: 'club', label: 'Club', icon: 'fas fa-users', color: 'text-green-600', bg: 'bg-green-100' },
   { value: 'federation', label: 'Fédération', icon: 'fas fa-flag', color: 'text-purple-600', bg: 'bg-purple-100' },
   { value: 'company', label: 'Société', icon: 'fas fa-briefcase', color: 'text-indigo-600', bg: 'bg-indigo-100' },
-  { value: 'affiliate', label: 'Associé vendeur', icon: 'fas fa-bullhorn', color: 'text-orange-600', bg: 'bg-orange-100' }
+  { value: 'affiliate', label: 'Ambassadeur', icon: 'fas fa-star', color: 'text-yellow-600', bg: 'bg-yellow-100' }
 ];
 
 export default function SignupPage() {
@@ -107,7 +107,17 @@ export default function SignupPage() {
           metadata.platform = formData.organizationName;
         }
 
-        const response = await fetch('/api/auth/social/complete-signup', {
+        // Préparer l'URL avec oauth_session
+        const urlParams = new URLSearchParams(window.location.search);
+        const apiUrl = new URL('/api/auth/social/complete-signup', window.location.origin);
+        
+        // Transmettre oauth_session
+        const oauthSession = urlParams.get('oauth_session');
+        if (oauthSession) {
+          apiUrl.searchParams.set('oauth_session', oauthSession);
+        }
+
+        const response = await fetch(apiUrl.toString(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -128,24 +138,10 @@ export default function SignupPage() {
         if (response.ok) {
           toast.success('Compte créé avec succès !', 'Connexion automatique...');
           
-          // Vérifier s'il y a des paramètres OAuth pour redirection
-          const urlParams = new URLSearchParams(window.location.search);
-          const clientId = urlParams.get('client_id');
-          const redirectUri = urlParams.get('redirect_uri');
-          const scope = urlParams.get('scope');
-          const oauthState = urlParams.get('oauth_state');
-          
           setTimeout(() => {
-            if (clientId && redirectUri) {
-              // Flux OAuth - rediriger vers l'endpoint d'autorisation
-              const authorizeUrl = new URL('/api/auth/authorize', window.location.origin);
-              authorizeUrl.searchParams.set('response_type', 'code');
-              authorizeUrl.searchParams.set('client_id', clientId);
-              authorizeUrl.searchParams.set('redirect_uri', redirectUri);
-              if (scope) authorizeUrl.searchParams.set('scope', scope);
-              if (oauthState) authorizeUrl.searchParams.set('state', oauthState);
-              
-              window.location.href = authorizeUrl.toString();
+            if (data.oauthSession) {
+              // Flux OAuth - rediriger vers continue avec oauth_session
+              window.location.href = `/api/auth/continue?oauth_session=${data.oauthSession}`;
             } else {
               // Connexion directe - rediriger vers le dashboard
               router.push('/dashboard');
@@ -193,7 +189,17 @@ export default function SignupPage() {
         metadata.platform = formData.organizationName;
       }
 
-      const response = await fetch('/api/auth/signup', {
+      // Préparer l'URL avec oauth_session
+      const urlParams = new URLSearchParams(window.location.search);
+      const apiUrl = new URL('/api/auth/signup', window.location.origin);
+      
+      // Transmettre oauth_session
+      const oauthSession = urlParams.get('oauth_session');
+      if (oauthSession) {
+        apiUrl.searchParams.set('oauth_session', oauthSession);
+      }
+
+      const response = await fetch(apiUrl.toString(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -213,7 +219,19 @@ export default function SignupPage() {
 
       if (response.ok) {
         toast.success('Inscription réussie', 'Vérifiez votre email pour activer votre compte');
-        setTimeout(() => router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`), 1500);
+        
+        // Construire l'URL de vérification avec oauth_session
+        const verifyUrl = new URL('/verify-email', window.location.origin);
+        verifyUrl.searchParams.set('email', formData.email);
+        
+        // Ajouter oauth_session s'il existe
+        const urlParams = new URLSearchParams(window.location.search);
+        const oauthSession = urlParams.get('oauth_session');
+        if (oauthSession) {
+          verifyUrl.searchParams.set('oauth_session', oauthSession);
+        }
+        
+        setTimeout(() => router.push(verifyUrl.pathname + verifyUrl.search), 1500);
       } else {
         toast.error('Erreur d\'inscription', data.error || 'Impossible de créer le compte');
         setError(data.error || 'Erreur lors de l\'inscription');
@@ -887,9 +905,18 @@ export default function SignupPage() {
           <div className="mt-6 pt-6 border-t border-gray-200 text-center">
             <div className="text-gray-600 text-sm">
               Déjà un compte ?{' '}
-              <a href="/login" className="text-paiecash hover:text-paiecash-dark font-medium">
+              <button 
+                onClick={() => {
+                  const urlParams = new URLSearchParams(window.location.search);
+                  const oauthSession = urlParams.get('oauth_session');
+                  
+                  const loginUrl = oauthSession ? `/login?oauth_session=${oauthSession}` : '/login';
+                  window.location.href = loginUrl;
+                }}
+                className="text-paiecash hover:text-paiecash-dark font-medium bg-transparent border-none cursor-pointer underline"
+              >
                 Se connecter
-              </a>
+              </button>
             </div>
           </div>
         </div>
@@ -904,7 +931,7 @@ export default function SignupPage() {
               {formData.userType === 'club' && 'Compte Club'}
               {formData.userType === 'federation' && 'Compte Fédération'}
               {formData.userType === 'company' && 'Compte Société'}
-              {formData.userType === 'affiliate' && 'Compte Associé vendeur'}
+              {formData.userType === 'affiliate' && 'Compte Ambassadeur'}
             </h3>
             <p className="text-sm text-gray-600">
               {formData.userType === 'donor' && 'Accès aux fonctionnalités de donation et suivi des contributions.'}

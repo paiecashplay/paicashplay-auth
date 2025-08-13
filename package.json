@@ -11,7 +11,9 @@
     "db:migrate": "npx prisma migrate dev",
     "db:generate": "npx prisma generate",
     "db:studio": "npx prisma studio",
-    "db:reset": "npx prisma migrate reset --force"
+    "db:reset": "npx prisma migrate reset --force",
+    "db:fix-sessions": "mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASSWORD $DB_NAME < prisma/migrations/fix_session_token_length.sql",
+    "postbuild": "npx prisma generate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

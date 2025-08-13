@@ -39,6 +39,13 @@ export default function AdminScopes() {
       items: [
         { id: 'federations:read', name: 'Lecture fédérations', description: 'Lister et consulter les fédérations nationales', required: false }
       ]
+    },
+    {
+      category: 'Gestion des ambassadeurs',
+      items: [
+        { id: 'ambassadors:read', name: 'Lecture ambassadeurs', description: 'Lister et consulter les ambassadeurs de la plateforme', required: false },
+        { id: 'ambassadors:write', name: 'Écriture ambassadeurs', description: 'Créer, modifier et supprimer des ambassadeurs', required: false }
+      ]
     }
   ];
 
@@ -66,6 +73,12 @@ export default function AdminScopes() {
       description: 'Une plateforme d\'analyse des données de football',
       scopes: ['openid', 'clubs:read', 'players:read', 'federations:read'],
       example: 'Analyse des tendances et statistiques par pays/région'
+    },
+    {
+      title: 'Plateforme d\'ambassadeurs',
+      description: 'Une application pour gérer et consulter les ambassadeurs',
+      scopes: ['openid', 'profile', 'email', 'ambassadors:read'],
+      example: 'Consultation de la liste des ambassadeurs actifs et leurs informations'
     }
   ];
 

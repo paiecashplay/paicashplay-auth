@@ -58,7 +58,8 @@ export async function PUT(
         'users:read', 'users:write',
         'clubs:read', 'clubs:write', 'clubs:members',
         'players:read', 'players:write',
-        'federations:read'
+        'federations:read',
+        'ambassadors:read', 'ambassadors:write'
       ];
       
       const invalidScopes = allowedScopes.filter((scope: string) => !validScopes.includes(scope));

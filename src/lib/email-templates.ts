@@ -30,14 +30,14 @@ export class EmailTemplateService {
       'welcome-federation': '<h1>Bienvenue Fédération {{firstName}} {{lastName}} !</h1><p>Votre espace Fédération est créé.</p><a href="{{dashboardUrl}}">Finaliser mon espace Fédération</a>',
       'welcome-company': '<h1>Bienvenue {{firstName}} {{lastName}} !</h1><p>Votre profil Entreprise est activé.</p><a href="{{dashboardUrl}}">Accéder à mon espace Société</a>',
       'welcome-donor': '<h1>Merci {{firstName}} !</h1><p>Votre générosité va transformer des vies.</p><a href="{{dashboardUrl}}">Activer mon espace Donateur</a>',
-      'welcome-affiliate': '<h1>Bienvenue {{firstName}} {{lastName}} !</h1><p>Votre compte Affilié est créé.</p><a href="{{dashboardUrl}}">Accéder à mon espace</a>',
+      'welcome-affiliate': '<h1>Bienvenue {{firstName}} {{lastName}} !</h1><p>Votre compte Embassadeur est créé.</p><a href="{{dashboardUrl}}">Accéder à mon espace</a>',
 
       'confirmed-player': '<h1>Compte activé !</h1><p>Bonjour {{firstName}}, votre compte Licencié est maintenant actif.</p><a href="{{dashboardUrl}}">Accéder à mon espace</a>',
       'confirmed-club': '<h1>Espace Club opérationnel !</h1><p>Bonjour {{firstName}} {{lastName}}, votre espace Club est maintenant actif.</p><a href="{{dashboardUrl}}">Gérer mon club</a>',
       'confirmed-federation': '<h1>Espace Fédération actif !</h1><p>Bonjour {{firstName}} {{lastName}}, votre espace Fédération est opérationnel.</p><a href="{{dashboardUrl}}">Accéder à mon espace</a>',
       'confirmed-company': '<h1>Profil Entreprise confirmé !</h1><p>Bonjour {{firstName}} {{lastName}}, votre profil Entreprise est maintenant actif.</p><a href="{{dashboardUrl}}">Accéder à mon espace</a>',
       'confirmed-donor': '<h1>Espace Donateur prêt !</h1><p>Bonjour {{firstName}}, votre espace Donateur est maintenant actif.</p><a href="{{dashboardUrl}}">Commencer à donner</a>',
-      'confirmed-affiliate': '<h1>Espace Affilié actif !</h1><p>Bonjour {{firstName}} {{lastName}}, votre espace Affilié est maintenant actif.</p><a href="{{dashboardUrl}}">Accéder à mon espace</a>',
+      'confirmed-affiliate': '<h1>Espace Embassadeur actif !</h1><p>Bonjour {{firstName}} {{lastName}}, votre espace Embassadeur est maintenant actif.</p><a href="{{dashboardUrl}}">Accéder à mon espace</a>',
       'password-reset': '<h1>Reset mot de passe</h1><p>Bonjour {{firstName}},</p><a href="{{resetUrl}}">Réinitialiser</a>'
     };
     return fallbacks[templateName] || '<p>Template non trouvé</p>';
@@ -71,7 +71,7 @@ export class EmailTemplateService {
       federation: `Création de votre espace Fédération sur PaieCashPlay`,
       company: `Activation de votre profil Entreprise sur PaieCashPlay`,
       donor: `Merci d'avoir choisi de soutenir PaieCashPlay !`,
-      affiliate: `Bienvenue parmi nos affiliés, ${firstName} !`
+      affiliate: `Bienvenue parmi nos embassadeurs, ${firstName} !`
     };
     return subjects[userType] || `Bienvenue sur PaieCashPlay, ${firstName} !`;
   }
@@ -118,7 +118,7 @@ export class EmailTemplateService {
       federation: `Votre Fédération est désormais sur PaieCashPlay !`,
       company: `Votre profil Entreprise est validé`,
       donor: `Merci pour votre inscription, Donateur confirmé !`,
-      affiliate: `Votre compte Affilié est validé !`
+      affiliate: `Votre compte Embassadeur est validé !`
     };
     return subjects[userType] || `Votre compte PaieCashPlay est activé, ${firstName} !`;
   }

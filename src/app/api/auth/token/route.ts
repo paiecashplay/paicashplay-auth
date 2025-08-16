@@ -128,14 +128,19 @@ export async function POST(request: NextRequest) {
     
   } catch (error: any) {
     console.error('OAuth token error:', error);
+    console.error('Stack trace:', error.stack);
     
-    await AuditService.log({
-      action: 'oauth_token_error',
-      resourceType: 'oauth',
-      newValues: { error: error.message },
-      ipAddress,
-      userAgent
-    });
+    try {
+      await AuditService.log({
+        action: 'oauth_token_error',
+        resourceType: 'oauth',
+        newValues: { error: error.message },
+        ipAddress,
+        userAgent
+      });
+    } catch (auditError) {
+      console.error('Audit error:', auditError);
+    }
     
     return NextResponse.json({ 
       error: 'server_error',

@@ -282,6 +282,9 @@ enum UserType {
   player
   company
   affiliate
+  academy
+  school
+  association
 }
 
 enum ConfigType {

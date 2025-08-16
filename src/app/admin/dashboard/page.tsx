@@ -40,6 +40,9 @@ export default function AdminDashboard() {
       case 'federation': return 'fas fa-flag';
       case 'company': return 'fas fa-briefcase';
       case 'affiliate': return 'fas fa-star';
+      case 'academy': return 'fas fa-graduation-cap';
+      case 'school': return 'fas fa-school';
+      case 'association': return 'fas fa-handshake';
       default: return 'fas fa-user';
     }
   };
@@ -52,6 +55,9 @@ export default function AdminDashboard() {
       case 'federation': return 'text-purple-600 bg-purple-100';
       case 'company': return 'text-indigo-600 bg-indigo-100';
       case 'affiliate': return 'text-yellow-600 bg-yellow-100';
+      case 'academy': return 'text-emerald-600 bg-emerald-100';
+      case 'school': return 'text-teal-600 bg-teal-100';
+      case 'association': return 'text-orange-600 bg-orange-100';
       default: return 'text-gray-600 bg-gray-100';
     }
   };
@@ -147,6 +153,9 @@ export default function AdminDashboard() {
                     {stat.userType === 'federation' && 'Fédération'}
                     {stat.userType === 'company' && 'Société'}
                     {stat.userType === 'affiliate' && 'Ambassadeur'}
+                    {stat.userType === 'academy' && 'Académie'}
+                    {stat.userType === 'school' && 'École'}
+                    {stat.userType === 'association' && 'Association'}
                   </span>
                 </div>
                 <div className="flex items-center">

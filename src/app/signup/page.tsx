@@ -12,12 +12,16 @@ import ClubSelect from '@/components/ui/ClubSelect';
 import FederationSelect from '@/components/ui/FederationSelect';
 
 const USER_TYPES = [
-  { value: 'donor', label: 'Donateur', icon: 'fas fa-heart', color: 'text-red-600', bg: 'bg-red-100' },
-  { value: 'player', label: 'Licencié', icon: 'fas fa-running', color: 'text-blue-600', bg: 'bg-blue-100' },
-  { value: 'club', label: 'Club', icon: 'fas fa-users', color: 'text-green-600', bg: 'bg-green-100' },
-  { value: 'federation', label: 'Fédération', icon: 'fas fa-flag', color: 'text-purple-600', bg: 'bg-purple-100' },
-  { value: 'company', label: 'Société', icon: 'fas fa-briefcase', color: 'text-indigo-600', bg: 'bg-indigo-100' },
-  { value: 'affiliate', label: 'Ambassadeur', icon: 'fas fa-star', color: 'text-yellow-600', bg: 'bg-yellow-100' }
+  { value: 'donor', label: 'Donateur', icon: 'fas fa-heart', color: 'text-red-600', bg: 'bg-red-100', desc: 'Soutenir les projets' },
+  { value: 'player', label: 'Licencié', icon: 'fas fa-running', color: 'text-blue-600', bg: 'bg-blue-100', desc: 'Profil sportif' },
+  { value: 'club', label: 'Club', icon: 'fas fa-users', color: 'text-green-600', bg: 'bg-green-100', desc: 'Gestion d’équipe' },
+  { value: 'federation', label: 'Fédération', icon: 'fas fa-flag', color: 'text-purple-600', bg: 'bg-purple-100', desc: 'Administration' },
+  { value: 'company', label: 'Société', icon: 'fas fa-briefcase', color: 'text-indigo-600', bg: 'bg-indigo-100', desc: 'Partenariats' },
+  { value: 'affiliate', label: 'Ambassadeur', icon: 'fas fa-star', color: 'text-yellow-600', bg: 'bg-yellow-100', desc: 'Promotion' },
+  { value: 'academy', label: 'Académie', icon: 'fas fa-graduation-cap', color: 'text-emerald-600', bg: 'bg-emerald-100', desc: 'Formation' },
+  { value: 'school', label: 'École', icon: 'fas fa-school', color: 'text-teal-600', bg: 'bg-teal-100', desc: 'Éducation' },
+  { value: 'association', label: 'Association', icon: 'fas fa-handshake', color: 'text-orange-600', bg: 'bg-orange-100', desc: 'Organisation' },
+
 ];
 
 export default function SignupPage() {
@@ -52,6 +56,29 @@ export default function SignupPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const provider = urlParams.get('provider');
     const socialDataParam = urlParams.get('socialData');
+    const preselectedType = urlParams.get('type') || urlParams.get('signup_type');
+    
+    // Pre-select user type if provided in URL
+    if (preselectedType) {
+      // Map signup_type values to internal values
+      const typeMapping: { [key: string]: string } = {
+        'ecole': 'school',
+        'school': 'school',
+        'club': 'club',
+        'player': 'player',
+        'donor': 'donor',
+        'federation': 'federation',
+        'company': 'company',
+        'affiliate': 'affiliate',
+        'academy': 'academy',
+        'association': 'association'
+      };
+      
+      const mappedType = typeMapping[preselectedType];
+      if (mappedType && USER_TYPES.find(t => t.value === mappedType)) {
+        setFormData(prev => ({ ...prev, userType: mappedType }));
+      }
+    }
     
     if (provider && socialDataParam) {
       try {
@@ -263,14 +290,14 @@ export default function SignupPage() {
                 Type de compte
               </label>
               {/* Desktop version */}
-              <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-4">
                 {USER_TYPES.map((type) => (
                   <label
                     key={type.value}
-                    className={`relative flex flex-col items-center p-4 border-2 rounded-xl cursor-pointer transition-all hover:scale-105 ${
+                    className={`relative flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg group ${
                       formData.userType === type.value
-                        ? 'border-paiecash bg-paiecash/5 shadow-lg'
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                        ? 'border-paiecash bg-paiecash/5 shadow-lg ring-2 ring-paiecash/20'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                   >
                     <input
@@ -281,45 +308,59 @@ export default function SignupPage() {
                       onChange={(e) => setFormData({ ...formData, userType: e.target.value })}
                       className="sr-only"
                     />
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-2 ${type.bg} shadow-sm`}>
-                      <i className={`${type.icon} text-lg ${type.color}`}></i>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-semibold text-gray-900 text-xs leading-tight">{type.label}</div>
+                    <div className="flex items-center mb-3">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mr-3 ${type.bg} shadow-sm group-hover:shadow-md transition-shadow`}>
+                        <i className={`${type.icon} text-lg ${type.color}`}></i>
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-900 text-sm">{type.label}</div>
+                        <div className="text-xs text-gray-500 mt-1">{type.desc}</div>
+                      </div>
                     </div>
                     {formData.userType === type.value && (
-                      <i className="fas fa-check-circle text-paiecash absolute top-2 right-2 text-sm"></i>
+                      <div className="absolute top-3 right-3">
+                        <div className="w-6 h-6 bg-paiecash rounded-full flex items-center justify-center">
+                          <i className="fas fa-check text-white text-xs"></i>
+                        </div>
+                      </div>
                     )}
                   </label>
                 ))}
               </div>
               
-              {/* Mobile version - Dropdown */}
-              <div className="sm:hidden">
-                <select
-                  value={formData.userType}
-                  onChange={(e) => setFormData({ ...formData, userType: e.target.value })}
-                  className="input-field text-base"
-                >
-                  <option value="">Sélectionnez votre type de compte</option>
-                  {USER_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-                {formData.userType && (
-                  <div className="mt-3 p-3 bg-paiecash/5 border border-paiecash/20 rounded-lg">
-                    <div className="flex items-center">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${USER_TYPES.find(t => t.value === formData.userType)?.bg} shadow-sm`}>
-                        <i className={`${USER_TYPES.find(t => t.value === formData.userType)?.icon} text-sm ${USER_TYPES.find(t => t.value === formData.userType)?.color}`}></i>
-                      </div>
-                      <span className="font-medium text-paiecash">
-                        {USER_TYPES.find(t => t.value === formData.userType)?.label}
-                      </span>
+              {/* Mobile version - Cards */}
+              <div className="sm:hidden space-y-3">
+                {USER_TYPES.map((type) => (
+                  <label
+                    key={type.value}
+                    className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                      formData.userType === type.value
+                        ? 'border-paiecash bg-paiecash/5 shadow-lg'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="userType"
+                      value={type.value}
+                      checked={formData.userType === type.value}
+                      onChange={(e) => setFormData({ ...formData, userType: e.target.value })}
+                      className="sr-only"
+                    />
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mr-4 ${type.bg} shadow-sm`}>
+                      <i className={`${type.icon} text-lg ${type.color}`}></i>
                     </div>
-                  </div>
-                )}
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">{type.label}</div>
+                      <div className="text-sm text-gray-500 mt-1">{type.desc}</div>
+                    </div>
+                    {formData.userType === type.value && (
+                      <div className="w-6 h-6 bg-paiecash rounded-full flex items-center justify-center ml-3">
+                        <i className="fas fa-check text-white text-xs"></i>
+                      </div>
+                    )}
+                  </label>
+                ))}
               </div>
             </div>
 
@@ -782,6 +823,275 @@ export default function SignupPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Academy Fields */}
+                {formData.userType === 'academy' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Nom de l'académie <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.organizationName}
+                        onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
+                        className="input-field"
+                        placeholder="Académie de Football de Paris"
+                        required
+                      />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Prénom du directeur <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.firstName}
+                          onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                          className="input-field"
+                          placeholder="Prénom"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Nom du directeur <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.lastName}
+                          onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                          className="input-field"
+                          placeholder="Nom"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Spécialité <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={formData.position}
+                          onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                          className="input-field"
+                          required
+                        >
+                          <option value="">Sélectionnez une spécialité</option>
+                          <option value="football">Football</option>
+                          <option value="basketball">Basketball</option>
+                          <option value="tennis">Tennis</option>
+                          <option value="rugby">Rugby</option>
+                          <option value="handball">Handball</option>
+                          <option value="volleyball">Volleyball</option>
+                          <option value="multisport">Multisport</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Pays <span className="text-red-500">*</span>
+                        </label>
+                        <CountrySelect
+                          value={formData.country}
+                          onChange={(country) => setFormData({ ...formData, country })}
+                          placeholder="Sélectionnez un pays"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Téléphone <span className="text-red-500">*</span>
+                      </label>
+                      <PhoneInput
+                        value={formData.phone}
+                        onChange={(phone) => setFormData({ ...formData, phone })}
+                        placeholder="1 23 45 67 89"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* School Fields */}
+                {formData.userType === 'school' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Nom de l'école <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.organizationName}
+                        onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
+                        className="input-field"
+                        placeholder="Lycée Jean Moulin"
+                        required
+                      />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Prénom du responsable <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.firstName}
+                          onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                          className="input-field"
+                          placeholder="Prénom"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Nom du responsable <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.lastName}
+                          onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                          className="input-field"
+                          placeholder="Nom"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Type d'établissement <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={formData.position}
+                          onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                          className="input-field"
+                          required
+                        >
+                          <option value="">Sélectionnez le type</option>
+                          <option value="primaire">Ecole primaire</option>
+                          <option value="college">Collège</option>
+                          <option value="lycee">Lycée</option>
+                          <option value="universite">Université</option>
+                          <option value="prive">Etablissement privé</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Pays <span className="text-red-500">*</span>
+                        </label>
+                        <CountrySelect
+                          value={formData.country}
+                          onChange={(country) => setFormData({ ...formData, country })}
+                          placeholder="Sélectionnez un pays"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Téléphone <span className="text-red-500">*</span>
+                      </label>
+                      <PhoneInput
+                        value={formData.phone}
+                        onChange={(phone) => setFormData({ ...formData, phone })}
+                        placeholder="1 23 45 67 89"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+
+
+                {/* Association Fields */}
+                {formData.userType === 'association' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Nom de l'association <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.organizationName}
+                        onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
+                        className="input-field"
+                        placeholder="Association Sportive de Quartier"
+                        required
+                      />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Prénom du président <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.firstName}
+                          onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                          className="input-field"
+                          placeholder="Prénom"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Nom du président <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.lastName}
+                          onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                          className="input-field"
+                          placeholder="Nom"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Type d'association <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={formData.position}
+                          onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                          className="input-field"
+                          required
+                        >
+                          <option value="">Sélectionnez le type</option>
+                          <option value="sportive">Association sportive</option>
+                          <option value="culturelle">Association culturelle</option>
+                          <option value="caritative">Association caritative</option>
+                          <option value="educative">Association éducative</option>
+                          <option value="jeunesse">Association de jeunesse</option>
+                          <option value="autre">Autre</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Pays <span className="text-red-500">*</span>
+                        </label>
+                        <CountrySelect
+                          value={formData.country}
+                          onChange={(country) => setFormData({ ...formData, country })}
+                          placeholder="Sélectionnez un pays"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Téléphone <span className="text-red-500">*</span>
+                      </label>
+                      <PhoneInput
+                        value={formData.phone}
+                        onChange={(phone) => setFormData({ ...formData, phone })}
+                        placeholder="1 23 45 67 89"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -921,25 +1231,37 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* Terms */}
         {/* Info by User Type */}
         {formData.userType && (
-          <div className="bg-gray-50 rounded-lg p-6 mt-8">
-            <h3 className="font-semibold text-gray-900 mb-3">
-              {formData.userType === 'donor' && 'Compte Donateur'}
-              {formData.userType === 'player' && 'Compte Licencié'}
-              {formData.userType === 'club' && 'Compte Club'}
-              {formData.userType === 'federation' && 'Compte Fédération'}
-              {formData.userType === 'company' && 'Compte Société'}
-              {formData.userType === 'affiliate' && 'Compte Ambassadeur'}
-            </h3>
-            <p className="text-sm text-gray-600">
-              {formData.userType === 'donor' && 'Accès aux fonctionnalités de donation et suivi des contributions.'}
-              {formData.userType === 'player' && 'Profil licencié avec statistiques, historique et gestion de carrière.'}
-              {formData.userType === 'club' && 'Gestion des joueurs, équipes et administration du club.'}
-              {formData.userType === 'federation' && 'Administration des clubs, compétitions et réglementation.'}
-              {formData.userType === 'company' && 'Accès aux fonctionnalités de sponsoring d\'entreprise et partenariats.'}
-              {formData.userType === 'affiliate' && 'Vente de billets d\'événements, commissions sur les ventes et outils de promotion.'}
+          <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6 mt-8 border border-gray-200">
+            <div className="flex items-center mb-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mr-3 ${USER_TYPES.find(t => t.value === formData.userType)?.bg} shadow-sm`}>
+                <i className={`${USER_TYPES.find(t => t.value === formData.userType)?.icon} ${USER_TYPES.find(t => t.value === formData.userType)?.color}`}></i>
+              </div>
+              <h3 className="font-semibold text-gray-900">
+                {formData.userType === 'donor' && 'Compte Donateur'}
+                {formData.userType === 'player' && 'Compte Licencié'}
+                {formData.userType === 'club' && 'Compte Club'}
+                {formData.userType === 'federation' && 'Compte Fédération'}
+                {formData.userType === 'company' && 'Compte Société'}
+                {formData.userType === 'affiliate' && 'Compte Ambassadeur'}
+                {formData.userType === 'academy' && 'Compte Académie'}
+                {formData.userType === 'school' && 'Compte École'}
+                {formData.userType === 'association' && 'Compte Association'}
+
+              </h3>
+            </div>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              {formData.userType === 'donor' && 'Accès aux fonctionnalités de donation et suivi des contributions pour soutenir les projets sportifs.'}
+              {formData.userType === 'player' && 'Profil licencié avec statistiques personnelles, historique des matchs et gestion de carrière sportive.'}
+              {formData.userType === 'club' && 'Gestion complète des joueurs, équipes, compétitions et administration du club sportif.'}
+              {formData.userType === 'federation' && 'Administration des clubs affiliés, organisation des compétitions et gestion de la réglementation.'}
+              {formData.userType === 'company' && 'Accès aux fonctionnalités de sponsoring d\'entreprise, partenariats et visibilité commerciale.'}
+              {formData.userType === 'affiliate' && 'Vente de billets d\'événements sportifs, commissions sur les ventes et outils de promotion avancés.'}
+              {formData.userType === 'academy' && 'Gestion des programmes de formation, suivi des élèves et organisation des cours sportifs.'}
+              {formData.userType === 'school' && 'Intégration du sport scolaire, gestion des équipes étudiantes et programmes éducatifs.'}
+              {formData.userType === 'association' && 'Coordination des activités associatives, gestion des membres et organisation d\'événements communautaires.'}
+
             </p>
           </div>
         )}

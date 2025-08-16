@@ -3,25 +3,25 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Bienvenue - Associé vendeur</title>
+    <title>Bienvenue - Académie</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #374151; background-color: #f8fafc; }
         .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .header { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 40px 32px; text-align: center; }
+        .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 32px; text-align: center; }
         .logo { color: white; font-size: 32px; font-weight: 700; margin-bottom: 8px; }
         .tagline { color: rgba(255, 255, 255, 0.9); font-size: 16px; font-weight: 500; }
         .content { padding: 48px 32px; }
         .welcome-icon { text-align: center; margin-bottom: 32px; }
-        .welcome-circle { width: 80px; height: 80px; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; box-shadow: 0 8px 25px -8px rgba(249, 115, 22, 0.4); }
+        .welcome-circle { width: 80px; height: 80px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; box-shadow: 0 8px 25px -8px rgba(16, 185, 129, 0.4); }
         .title { font-size: 32px; font-weight: 700; color: #111827; margin-bottom: 16px; text-align: center; }
         .subtitle { font-size: 18px; color: #6b7280; margin-bottom: 32px; text-align: center; }
-        .cta-button { display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin: 32px 0; box-shadow: 0 4px 14px 0 rgba(249, 115, 22, 0.3); transition: all 0.2s; }
-        .features { background-color: #fff7ed; border-radius: 12px; padding: 24px; margin: 32px 0; border: 1px solid #fed7aa; }
+        .cta-button { display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin: 32px 0; box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.3); transition: all 0.2s; }
+        .features { background-color: #f0fdf4; border-radius: 12px; padding: 24px; margin: 32px 0; border: 1px solid #bbf7d0; }
         .features h3 { color: #111827; font-size: 18px; font-weight: 600; margin-bottom: 16px; }
         .feature-list { list-style: none; }
         .feature-item { display: flex; align-items: flex-start; margin-bottom: 12px; }
-        .feature-icon { width: 20px; height: 20px; background-color: #f97316; border-radius: 50%; margin-right: 12px; margin-top: 2px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; flex-shrink: 0; }
+        .feature-icon { width: 20px; height: 20px; background-color: #10b981; border-radius: 50%; margin-right: 12px; margin-top: 2px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; flex-shrink: 0; }
         .footer { background-color: #f8fafc; padding: 32px; text-align: center; border-top: 1px solid #e5e7eb; }
         .footer-text { font-size: 14px; color: #6b7280; margin-bottom: 16px; }
         .footer-links { font-size: 12px; color: #9ca3af; }
@@ -37,48 +37,48 @@
         
         <div class="content">
             <div class="welcome-icon">
-                <div class="welcome-circle">📢</div>
+                <div class="welcome-circle">🎓</div>
             </div>
             
             <h1 class="title">Bienvenue {{firstName}} !</h1>
-            <p class="subtitle">Votre compte Ambassadeur Paiecashplay a été créé</p>
+            <p class="subtitle">Votre compte Académie Paiecashplay a été créé</p>
             
-            <p style="margin-bottom: 12px; text-align: center;">Merci de rejoindre notre communauté passionnée qui contrinue activement à révolutionner l'univers de la billeterie digital en Afrique.</p>
-            <p style="margin-bottom: 24px; text-align: center;">Votre compte sera active sous 24h aprés vérification, vous bénéficiez désormais d'avantages qui enrichissent votre expérience avec notre plateforme.</p>
+            <p style="margin-bottom: 12px; text-align: center;">Merci de rejoindre notre communauté dédiée à la formation sportive d'excellence en Afrique.</p>
+            <p style="margin-bottom: 24px; text-align: center;">Votre compte sera activé sous 24h après vérification. Vous bénéficiez désormais d'outils avancés pour gérer votre académie.</p>
             
             <div style="text-align: center;">
                 <a href="{{verificationUrl}}" class="cta-button">Vérifier mon compte</a>
             </div>
             
             <div class="features">
-                <h3>🚀 Prochaines étapes</h3>
+                <h3>🚀 Fonctionnalités Académie</h3>
                 <ul class="feature-list">
                     <li class="feature-item">
                         <div class="feature-icon">✉️</div>
                         <div><strong>Vérifiez votre email</strong> - Cliquez sur le lien ci-dessus</div>
                     </li>
                     <li class="feature-item">
-                        <div class="feature-icon">🎫</div>
-                        <div><strong>Accédez aux événements</strong> - Découvrez les billets à promouvoir</div>
+                        <div class="feature-icon">👥</div>
+                        <div><strong>Gestion des élèves</strong> - Suivi personnalisé des apprenants</div>
                     </li>
                     <li class="feature-item">
-                        <div class="feature-icon">💰</div>
-                        <div><strong>Gagnez des commissions</strong> - Sur chaque vente réalisée</div>
+                        <div class="feature-icon">📚</div>
+                        <div><strong>Programmes de formation</strong> - Création et gestion des cursus</div>
                     </li>
                     <li class="feature-item">
-                        <div class="feature-icon">📊</div>
-                        <div><strong>Suivez vos performances</strong> - Tableau de bord détaillé</div>
+                        <div class="feature-icon">🏆</div>
+                        <div><strong>Événements et compétitions</strong> - Organisation d'événements</div>
                     </li>
                 </ul>
             </div>
             
             <p style="font-size: 14px; color: #6b7280; text-align: center; margin-top: 32px;">
-                Questions ? Contactez-nous à <a href="mailto:support@paiecashplay.com" style="color: #f97316;">support@paiecashplay.com</a>
+                Questions ? Contactez-nous à <a href="mailto:support@paiecashplay.com" style="color: #10b981;">support@paiecashplay.com</a>
             </p>
         </div>
         
         <div class="footer">
-            <div class="footer-text">Merci de nous avoir rejoint! Ensemble, façonnons l'avenir de la billeterie difitale en Afrique</div>
+            <div class="footer-text">Merci de nous avoir rejoint! Ensemble, formons les champions de demain</div>
             <div class="footer-links">
                 <a href="#">Conditions d'utilisation</a> •
                 <a href="#">Confidentialité</a> •

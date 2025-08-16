@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
   const scope = searchParams.get('scope') || 'openid profile email';
   const state = searchParams.get('state');
   const prompt = searchParams.get('prompt'); // login, consent, select_account
+  const signup_type = searchParams.get('signup_type'); // Type de compte pour inscription
   
   // Validate required parameters
   if (!response_type || !client_id || !redirect_uri) {
@@ -58,6 +59,14 @@ export async function GET(request: NextRequest) {
   });
   
   if (!sessionToken || prompt === 'login') {
+    // Si signup_type est spécifié, rediriger vers signup
+    if (signup_type && !sessionToken) {
+      const signupUrl = createAbsoluteUrl('/signup');
+      signupUrl.searchParams.set('oauth_session', oauthSessionId);
+      signupUrl.searchParams.set('type', signup_type);
+      return NextResponse.redirect(signupUrl);
+    }
+    
     // Redirect to login with session ID
     const loginUrl = createAbsoluteUrl('/login');
     loginUrl.searchParams.set('oauth_session', oauthSessionId);

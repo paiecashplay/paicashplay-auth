@@ -3,9 +3,18 @@ import { AuthService } from '@/lib/auth-service';
 import { EmailService } from '@/lib/email-service';
 import { validateEmail, validatePassword } from '@/lib/auth';
 
+const VALID_USER_TYPES = ['donor', 'federation', 'club', 'player', 'company', 'affiliate', 'academy', 'school', 'association'] as const;
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (error) {
+      return NextResponse.json({ 
+        error: 'Invalid JSON format' 
+      }, { status: 400 });
+    }
     const { email, password, firstName, lastName, userType, phone, country, isPartner, metadata } = body;
     
     // Validation
@@ -27,7 +36,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    if (!['donor', 'federation', 'club', 'player', 'company', 'affiliate'].includes(userType)) {
+    if (!VALID_USER_TYPES.includes(userType)) {
       return NextResponse.json({ 
         error: 'Invalid user type' 
       }, { status: 400 });
@@ -74,7 +83,10 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error: any) {
-    console.error('Signup error:', error);
+    // Utiliser un logger structuré en production
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Signup error:', error);
+    }
     
     if (error.message === 'User already exists') {
       return NextResponse.json({ 

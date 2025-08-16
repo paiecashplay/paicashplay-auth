@@ -73,13 +73,17 @@ export class OAuthService {
         redirectUri,
         used: false,
         expiresAt: { gt: new Date() }
-      },
-      include: {
-        user: { include: { profile: true } }
       }
     });
     
-    if (!authCode || !authCode.user) return null;
+    if (!authCode) return null;
+    
+    const user = await prisma.user.findUnique({
+      where: { id: authCode.userId },
+      include: { profile: true }
+    });
+    
+    if (!user) return null;
     
     // Validate PKCE if present
     if (authCode.codeChallenge && authCode.codeChallengeMethod) {
@@ -99,9 +103,9 @@ export class OAuthService {
     });
     
     const tokenPayload = {
-      sub: authCode.user.id,
-      email: authCode.user.email,
-      user_type: authCode.user.userType,
+      sub: user.id,
+      email: user.email,
+      user_type: user.userType,
       scope: authCode.scope || 'openid profile email',
       client_id: clientId
     };
@@ -114,7 +118,7 @@ export class OAuthService {
       data: {
         tokenHash: crypto.createHash('sha256').update(accessToken).digest('hex'),
         clientId,
-        userId: authCode.user.id,
+        userId: user.id,
         scope: authCode.scope,
         expiresAt: new Date(Date.now() + 3600 * 1000)
       }

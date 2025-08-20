@@ -37,9 +37,9 @@ export default function Logo({ size = 'md', showText = true, className = '' }: L
           <span className={`font-bold text-gray-900 ${textSizes[size]} leading-tight`}>
             PaieCashPlay
           </span>
-          <span className="text-xs text-paiecash font-medium uppercase tracking-wide">
+          {/* <span className="text-xs text-paiecash font-medium uppercase tracking-wide">
             Authentication
-          </span>
+          </span> */}
         </div>
       )}
     </div>

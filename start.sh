@@ -23,15 +23,15 @@ npx prisma generate
 # Attendre et configurer la base de données
 echo "⏳ Setting up database..."
 timeout=60
-while ! npx prisma db push --accept-data-loss 2>/dev/null; do
-  timeout=$((timeout - 1))
-  if [ $timeout -eq 0 ]; then
-    echo "❌ Database setup timeout"
-    exit 1
-  fi
-  echo "Retrying database setup... ($timeout attempts left)"
-  sleep 3
-done
+# while ! npx prisma db push --accept-data-loss 2>/dev/null; do
+#   timeout=$((timeout - 1))
+#   if [ $timeout -eq 0 ]; then
+#     echo "❌ Database setup timeout"
+#     exit 1
+#   fi
+#   echo "Retrying database setup... ($timeout attempts left)"
+#   sleep 3
+# done
 
 echo "✅ Database schema ready"
 

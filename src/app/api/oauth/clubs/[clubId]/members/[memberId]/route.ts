@@ -15,7 +15,7 @@ export const PUT = requireOAuthScope(['clubs:write', 'users:write'])(async (
 
   try {
     const body = await request.json();
-    const { firstName, lastName, country, phone, metadata = {} } = body;
+    const { firstName, lastName, country, phone, height, weight, metadata = {} } = body;
 
     // Vérifier que le membre existe et appartient au club
     const member = await prisma.user.findFirst({
@@ -44,6 +44,8 @@ export const PUT = requireOAuthScope(['clubs:write', 'users:write'])(async (
         lastName: lastName || member.profile?.lastName,
         country: country || member.profile?.country,
         phone: phone || member.profile?.phone,
+        height: height !== undefined ? (height ? parseFloat(height) : null) : member.profile?.height,
+        weight: weight !== undefined ? (weight ? parseFloat(weight) : null) : member.profile?.weight,
         metadata: {
           ...(member.profile?.metadata as Record<string, any> || {}),
           ...metadata,
@@ -61,6 +63,8 @@ export const PUT = requireOAuthScope(['clubs:write', 'users:write'])(async (
         lastName: updatedProfile.lastName,
         country: updatedProfile.country,
         phone: updatedProfile.phone,
+        height: updatedProfile.height,
+        weight: updatedProfile.weight,
         isVerified: member.isVerified,
         metadata: updatedProfile.metadata
       }

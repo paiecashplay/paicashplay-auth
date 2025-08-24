@@ -122,7 +122,9 @@ export const GET = requireOAuthScope(['clubs:members'])(async (
     return NextResponse.json({
       club: {
         id: club.id,
-        name: club.profile?.firstName || club.email
+        name: club.profile?.firstName && club.profile?.lastName 
+          ? `${club.profile.firstName} ${club.profile.lastName}`.trim()
+          : club.profile?.firstName || club.email
       },
       members: paginatedMembers.map(member => ({
         id: member.id,
@@ -131,6 +133,8 @@ export const GET = requireOAuthScope(['clubs:members'])(async (
         lastName: member.profile?.lastName,
         country: member.profile?.country,
         phone: member.profile?.phone,
+        height: member.profile?.height,
+        weight: member.profile?.weight,
         isVerified: member.isVerified,
         createdAt: member.createdAt,
         metadata: member.profile?.metadata
@@ -162,12 +166,25 @@ export const POST = requireOAuthScope(['clubs:write', 'users:write'])(async (
   
   try {
     const body = await request.json();
-    const { email, password, firstName, lastName, country, phone, metadata = {} } = body;
+    const { email, password, firstName, lastName, country, phone, height, weight, metadata = {} } = body;
 
-    if (!email || !password || !firstName || !lastName) {
+    if (!firstName || !lastName) {
       return NextResponse.json({ 
-        error: 'Missing required fields: email, password, firstName, lastName' 
+        error: 'Missing required fields: firstName, lastName' 
       }, { status: 400 });
+    }
+
+    // Si email fourni, vérifier qu'il n'existe pas déjà
+    if (email) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() }
+      });
+
+      if (existingUser) {
+        return NextResponse.json({ 
+          error: 'User with this email already exists' 
+        }, { status: 409 });
+      }
     }
 
     // Verify club exists
@@ -183,40 +200,37 @@ export const POST = requireOAuthScope(['clubs:write', 'users:write'])(async (
       return NextResponse.json({ error: 'Club not found' }, { status: 404 });
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() }
-    });
-
-    if (existingUser) {
-      return NextResponse.json({ 
-        error: 'User with this email already exists' 
-      }, { status: 409 });
-    }
-
-    // Hash password
+    // Générer un email temporaire si non fourni
+    const playerEmail = email ? email.toLowerCase() : `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}@player.paiecashplay.com`;
+    
+    // Hash password si fourni, sinon générer un mot de passe temporaire
     const bcrypt = require('bcryptjs');
-    const passwordHash = await bcrypt.hash(password, 12);
+    const playerPassword = password || Math.random().toString(36).substr(2, 12);
+    const passwordHash = await bcrypt.hash(playerPassword, 12);
 
     // Create player with club association
     const player = await prisma.user.create({
       data: {
-        email: email.toLowerCase(),
+        email: playerEmail,
         passwordHash,
         userType: 'player',
-        isVerified: true,
+        isVerified: email ? false : true, // Vérifié automatiquement si pas d'email réel
         profile: {
           create: {
             firstName,
             lastName,
             country,
             phone,
+            height: height ? parseFloat(height) : null,
+            weight: weight ? parseFloat(weight) : null,
             metadata: {
               ...metadata,
               clubId: params.clubId,
-              clubName: club.profile?.firstName || club.email,
+              clubName: (club.profile?.metadata as any)?.organizationName ? (club.profile?.metadata as any)?.organizationName :  club.email,
               joinDate: new Date().toISOString(),
-              status: metadata.status || 'active'
+              status: metadata.status || 'active',
+              hasRealEmail: !!email, // Indiquer si c'est un vrai email
+              isMinor: !email // Considérer comme mineur si pas d'email
             }
           }
         }
@@ -234,6 +248,8 @@ export const POST = requireOAuthScope(['clubs:write', 'users:write'])(async (
         lastName: player.profile?.lastName,
         country: player.profile?.country,
         phone: player.profile?.phone,
+        height: player.profile?.height,
+        weight: player.profile?.weight,
         isVerified: player.isVerified,
         createdAt: player.createdAt,
         metadata: player.profile?.metadata

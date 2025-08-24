@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getBaseUrl } from '@/lib/url-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward the request to the OAuth endpoint
-    const oauthResponse = await fetch(`http://localhost:3000/api/oauth/clubs/${clubId}/members`, {
+    const oauthResponse = await fetch(`${getBaseUrl()}/api/oauth/clubs/${clubId}/members`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -6,6 +6,7 @@ const ALLOWED_ORIGINS = [
   'https://paiecashplay.com',
   'https://app.paiecashplay.com',
   'https://admin.paiecashplay.com',
+  'https://fundation.paiecashplay.com',
   ...(process.env.NODE_ENV === 'development' ? ['http://localhost:3000', 'http://localhost:3001'] : [])
 ];
 

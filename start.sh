@@ -14,7 +14,7 @@ echo "🚀 Starting PaieCashPlay Auth..."
 export DATABASE_URL="mysql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT:-3306}/${DB_NAME}"
 
 
-echo "🔍 Database URL configured"
+echo "🔍 Database URL configured: ${DATABASE_URL}"
 
 # Générer le client Prisma avec la nouvelle URL
 echo "⚙️ Generating Prisma client..."

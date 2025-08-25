@@ -54,7 +54,7 @@ model UserProfile {
 model UserSession {
   id           String   @id @default(cuid())
   userId       String   @map("user_id")
-  sessionToken String   @unique @map("session_token") @db.VarChar(191)
+  sessionToken String   @unique @map("session_token") @db.VarChar(512)
   ipAddress    String?  @map("ip_address")
   userAgent    String?  @map("user_agent")
   expiresAt    DateTime @map("expires_at")
@@ -67,7 +67,7 @@ model UserSession {
 model EmailVerification {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  token     String   @unique @db.VarChar(191)
+  token     String   @unique @db.VarChar(512)
   expiresAt DateTime @map("expires_at")
   used      Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
@@ -79,7 +79,7 @@ model EmailVerification {
 model PasswordReset {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  token     String   @unique @db.VarChar(191)
+  token     String   @unique @db.VarChar(512)
   expiresAt DateTime @map("expires_at")
   used      Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
@@ -120,7 +120,7 @@ model OAuthSession {
 
 model AuthorizationCode {
   id                  String      @id @default(cuid())
-  code                String      @unique @db.VarChar(191)
+  code                String      @unique @db.VarChar(512)
   clientId            String      @map("client_id")
   userId              String      @map("user_id")
   redirectUri         String      @map("redirect_uri")
@@ -138,7 +138,7 @@ model AuthorizationCode {
 
 model AccessToken {
   id            String         @id @default(cuid())
-  tokenHash     String         @unique @map("token_hash") @db.VarChar(191)
+  tokenHash     String         @unique @map("token_hash") @db.VarChar(512)
   clientId      String         @map("client_id")
   userId        String         @map("user_id")
   scope         String?
@@ -154,7 +154,7 @@ model AccessToken {
 
 model RefreshToken {
   id            String      @id @default(cuid())
-  tokenHash     String      @unique @map("token_hash") @db.VarChar(191)
+  tokenHash     String      @unique @map("token_hash") @db.VarChar(512)
   accessTokenId String      @map("access_token_id")
   expiresAt     DateTime    @map("expires_at")
   revoked       Boolean     @default(false)
@@ -218,7 +218,7 @@ model AuditLog {
 
 model RateLimitLog {
   id        String   @id @default(cuid())
-  key       String   @unique @db.VarChar(191)
+  key       String   @unique @db.VarChar(512)
   count     Int      @default(1)
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")

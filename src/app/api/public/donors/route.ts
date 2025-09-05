@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
         {
           profile: {
             metadata: {
-              path: '$.isDonor',
+              path: ['isDonor'],
               equals: true
             }
           }

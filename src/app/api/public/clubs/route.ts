@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       filters.push({
         profile: {
           metadata: {
-            path: '$.league',
+            path: ['league'],
             equals: league
           }
         }

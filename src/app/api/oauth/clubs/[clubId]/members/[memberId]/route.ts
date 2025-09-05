@@ -24,7 +24,7 @@ export const PUT = requireOAuthScope(['clubs:write', 'users:write'])(async (
         userType: 'player',
         profile: {
           metadata: {
-            path: '$.clubId',
+            path: ['clubId'],
             equals: params.clubId
           }
         }
@@ -95,7 +95,7 @@ export const DELETE = requireOAuthScope(['clubs:write'])(async (
         userType: 'player',
         profile: {
           metadata: {
-            path: '$.clubId',
+            path: ['clubId'],
             equals: params.clubId
           }
         }

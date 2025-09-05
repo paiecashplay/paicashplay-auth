@@ -11,7 +11,7 @@ echo "🚀 Starting PaieCashPlay Auth..."
 : "${DB_PORT:?Missing DB_PORT}"
 
 # Construire l'URL de base de données pour Cloud SQL
-export DATABASE_URL="mysql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT:-3306}/${DB_NAME}"
+export DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT:-3306}/${DB_NAME}"
 
 
 echo "🔍 Database URL configured: ${DATABASE_URL}"

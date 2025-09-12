@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyJWT } from '@/lib/jwt';
 import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,38 +9,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Missing or invalid authorization header' }, { status: 401 });
     }
 
-    const token = authHeader.substring(7);
+    const accessToken = authHeader.substring(7);
+    const tokenHash = crypto.createHash('sha256').update(accessToken).digest('hex');
     
-    // Verify JWT token
-    try {
-      const payload = await verifyJWT(token);
-      if (!payload || !payload.sub) {
-        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-      }
-    } catch (error: any) {
-      if (error.code === 'ERR_JWT_EXPIRED') {
-        return NextResponse.json({ 
-          error: 'token_expired',
-          error_description: 'The access token has expired. Please refresh your token.' 
-        }, { status: 401 });
-      }
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-    
-    const payload = await verifyJWT(token);
-
-    // Get user info
-    const user = await prisma.user.findUnique({
-      where: { id: payload.sub },
+    // Verify OAuth access token
+    const tokenRecord = await prisma.accessToken.findFirst({
+      where: {
+        tokenHash: tokenHash,
+        revoked: false,
+        expiresAt: { gt: new Date() }
+      },
       include: {
-        profile: true,
-        socialAccounts: {
+        user: {
           include: {
-            provider: {
-              select: {
-                name: true,
-                displayName: true,
-                type: true
+            profile: true,
+            socialAccounts: {
+              include: {
+                provider: {
+                  select: {
+                    name: true,
+                    displayName: true,
+                    type: true
+                  }
+                }
               }
             }
           }
@@ -48,8 +39,21 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!tokenRecord) {
+      return NextResponse.json({ error: 'Invalid or expired access token' }, { status: 401 });
+    }
+
+    const user = tokenRecord.user;
+
+    // Determine picture URL - prioritize uploaded photo over social avatar
+    let pictureUrl = user.profile?.avatarUrl;
+    
+    // If no uploaded photo, use social account avatar as fallback
+    if (!pictureUrl || !pictureUrl.includes('storage.googleapis.com')) {
+      const socialAvatar = user.socialAccounts.find(account => account.avatar)?.avatar;
+      if (socialAvatar && !pictureUrl) {
+        pictureUrl = socialAvatar;
+      }
     }
 
     // Return OpenID Connect standard claims
@@ -62,7 +66,7 @@ export async function GET(request: NextRequest) {
       family_name: user.profile?.lastName,
       phone_number: user.profile?.phone,
       locale: user.profile?.language || 'fr',
-      picture: user.profile?.avatarUrl,
+      picture: pictureUrl,
       updated_at: Math.floor(new Date(user.updatedAt).getTime() / 1000),
       
       // Custom PaieCashPlay claims
@@ -91,12 +95,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(userInfo);
   } catch (error: any) {
     console.error('UserInfo error:', error);
-    if (error.code === 'ERR_JWT_EXPIRED') {
-      return NextResponse.json({ 
-        error: 'token_expired',
-        error_description: 'The access token has expired. Please refresh your token.' 
-      }, { status: 401 });
-    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 // GET - Récupérer le profil utilisateur (OAuth)
 export async function GET(request: NextRequest) {
@@ -14,18 +14,20 @@ export async function GET(request: NextRequest) {
     }
 
     const accessToken = authHeader.substring(7);
+    const tokenHash = crypto.createHash('sha256').update(accessToken).digest('hex');
 
     // Vérifier le token d'accès
     const tokenRecord = await prisma.accessToken.findFirst({
       where: {
-        tokenHash: accessToken,
+        tokenHash: tokenHash,
         revoked: false,
         expiresAt: { gt: new Date() }
       },
       include: {
         user: {
           include: {
-            profile: true
+            profile: true,
+            socialAccounts: true
           }
         }
       }
@@ -52,14 +54,27 @@ export async function GET(request: NextRequest) {
       profileData.email_verified = user.isVerified;
     }
 
-    if (scopes.includes('profile') && user.profile) {
-      profileData.name = `${user.profile.firstName} ${user.profile.lastName}`.trim();
-      profileData.given_name = user.profile.firstName;
-      profileData.family_name = user.profile.lastName;
-      profileData.phone_number = user.profile.phone;
-      profileData.locale = user.profile.language || 'fr';
-      profileData.picture = user.profile.avatarUrl;
-      profileData.updated_at = Math.floor(new Date(user.profile.updatedAt).getTime() / 1000);
+    if (scopes.includes('profile')) {
+      // Determine picture URL - prioritize uploaded photo over social avatar
+      let pictureUrl = user.profile?.avatarUrl;
+      
+      // If no uploaded photo, use social account avatar as fallback
+      if (!pictureUrl || !pictureUrl.includes('storage.googleapis.com')) {
+        const socialAvatar = user.socialAccounts.find(account => account.avatar)?.avatar;
+        if (socialAvatar && !pictureUrl) {
+          pictureUrl = socialAvatar;
+        }
+      }
+
+      if (user.profile) {
+        profileData.name = `${user.profile.firstName} ${user.profile.lastName}`.trim();
+        profileData.given_name = user.profile.firstName;
+        profileData.family_name = user.profile.lastName;
+        profileData.phone_number = user.profile.phone;
+        profileData.locale = user.profile.language || 'fr';
+        profileData.picture = pictureUrl;
+        profileData.updated_at = Math.floor(new Date(user.profile.updatedAt).getTime() / 1000);
+      }
     }
 
     // Ajouter des informations spécifiques PaieCashPlay
@@ -92,11 +107,12 @@ export async function PUT(request: NextRequest) {
     }
 
     const accessToken = authHeader.substring(7);
+    const tokenHash = crypto.createHash('sha256').update(accessToken).digest('hex');
 
     // Vérifier le token d'accès
     const tokenRecord = await prisma.accessToken.findFirst({
       where: {
-        tokenHash: accessToken,
+        tokenHash: tokenHash,
         revoked: false,
         expiresAt: { gt: new Date() }
       }
@@ -118,7 +134,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { given_name, family_name, phone_number, locale } = body;
+    const { given_name, family_name, phone_number, locale, picture_url } = body;
 
     // Mettre à jour le profil
     const updateData: any = {};
@@ -126,6 +142,7 @@ export async function PUT(request: NextRequest) {
     if (family_name !== undefined) updateData.lastName = family_name;
     if (phone_number !== undefined) updateData.phone = phone_number;
     if (locale !== undefined) updateData.language = locale;
+    if (picture_url !== undefined) updateData.avatarUrl = picture_url;
 
     const updatedProfile = await prisma.userProfile.upsert({
       where: { userId: tokenRecord.userId },
@@ -134,7 +151,8 @@ export async function PUT(request: NextRequest) {
         firstName: given_name || '',
         lastName: family_name || '',
         phone: phone_number || null,
-        language: locale || 'fr'
+        language: locale || 'fr',
+        avatarUrl: picture_url || null
       },
       update: updateData
     });
@@ -147,6 +165,7 @@ export async function PUT(request: NextRequest) {
         family_name: updatedProfile.lastName,
         phone_number: updatedProfile.phone,
         locale: updatedProfile.language,
+        picture: updatedProfile.avatarUrl,
         updated_at: Math.floor(new Date(updatedProfile.updatedAt).getTime() / 1000)
       }
     });

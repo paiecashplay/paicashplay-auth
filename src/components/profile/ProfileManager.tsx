@@ -34,6 +34,7 @@ interface User {
     lastName: string;
     phone?: string;
     country?: string;
+    avatarUrl?: string;
     metadata?: UserMetadata;
   };
   socialAccounts?: Array<{
@@ -89,6 +90,37 @@ export default function ProfileManager() {
   };
 
   const [saveLoading, setSaveLoading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const response = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success('Avatar mis à jour', 'Votre photo de profil a été mise à jour');
+        fetchProfile(); // Recharger le profil
+      } else {
+        const error = await response.json();
+        toast.error('Erreur', error.error || 'Impossible de mettre à jour l\'avatar');
+      }
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Erreur', 'Erreur de connexion');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaveLoading(true);
@@ -432,8 +464,29 @@ export default function ProfileManager() {
         <div className="card-elevated">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mr-4 ${typeInfo.bg}`}>
-                <i className={`${typeInfo.icon} ${typeInfo.color} text-xl`}></i>
+              <div className="relative mr-4">
+                {user.profile?.avatarUrl ? (
+                  <img 
+                    src={user.profile.avatarUrl} 
+                    alt="Avatar" 
+                    className="w-12 h-12 rounded-xl object-cover"
+                  />
+                ) : (
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${typeInfo.bg}`}>
+                    <i className={`${typeInfo.icon} ${typeInfo.color} text-xl`}></i>
+                  </div>
+                )}
+                {editing && (
+                  <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-paiecash text-white rounded-full flex items-center justify-center cursor-pointer hover:bg-paiecash-dark transition-colors">
+                    <i className="fas fa-camera text-xs"></i>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={handleAvatarChange}
+                    />
+                  </label>
+                )}
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Mon Profil</h1>

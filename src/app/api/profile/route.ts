@@ -34,6 +34,7 @@ export const GET = requireAuth(async (request: NextRequest, user: any) => {
         isVerified: userWithProfile.isVerified,
         createdAt: userWithProfile.createdAt,
         profile: userWithProfile.profile,
+        avatarUrl: userWithProfile.profile?.avatarUrl,
         socialAccounts: userWithProfile.socialAccounts.map(account => ({
           provider: account.provider.displayName,
           type: account.provider.type,

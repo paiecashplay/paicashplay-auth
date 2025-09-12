@@ -37,14 +37,14 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Créer l'utilisateur avec les données complètes
+    // Créer l'utilisateur avec les données complètes (sans copier l'avatar social)
     const profileData = {
       firstName: additionalData.firstName || socialData.firstName,
       lastName: additionalData.lastName || socialData.lastName,
       phone: additionalData.phone || null,
       country: additionalData.country || null,
       language: additionalData.language || 'fr',
-      avatarUrl: socialData.avatar,
+      avatarUrl: null, // L'avatar social reste dans socialAccounts
       isPartner: additionalData.profileData?.isPartner || false,
       metadata: additionalData.profileData ? {
         position: additionalData.profileData.position,
@@ -107,6 +107,20 @@ export async function POST(request: NextRequest) {
     });
     
     console.log('Social complete-signup - Session created for user:', user.email);
+
+    // Envoyer l'email de bienvenue pour l'inscription sociale
+    try {
+      const { EmailService } = await import('@/lib/email-service');
+      await EmailService.sendAccountConfirmedEmail(
+        user.email,
+        user.profile?.firstName || 'Utilisateur',
+        user.profile?.lastName || '',
+        user.userType as any
+      );
+    } catch (emailError) {
+      console.error('Error sending welcome email for social signup:', emailError);
+      // Ne pas faire échouer l'inscription si l'email ne peut pas être envoyé
+    }
 
     // Récupérer oauth_session depuis la requête
     const url = new URL(request.url);

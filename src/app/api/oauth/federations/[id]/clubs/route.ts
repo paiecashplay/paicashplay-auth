@@ -60,7 +60,7 @@ export async function GET(
               userType: 'player',
               profile: {
                 metadata: {
-                  path: '$.clubId',
+                  path: ['$.clubId'],
                   equals: club.id
                 }
               }

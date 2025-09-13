@@ -17,22 +17,22 @@ export const PUT = requireOAuthScope(['clubs:write', 'users:write'])(async (
     const body = await request.json();
     const { firstName, lastName, country, phone, height, weight, metadata = {} } = body;
 
-    // Vérifier que le membre existe et appartient au club
+    // Vérifier que le membre existe
     const member = await prisma.user.findFirst({
       where: {
         id: params.memberId,
-        userType: 'player',
-        profile: {
-          metadata: {
-            path: '$.clubId',
-            equals: params.clubId
-          }
-        }
+        userType: 'player'
       },
       include: { profile: true }
     });
 
-    if (!member) {
+    if (!member || !member.profile) {
+      return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+    }
+
+    // Vérifier que le membre appartient au club
+    const memberMetadata = member.profile.metadata as any;
+    if (memberMetadata?.clubId !== params.clubId) {
       return NextResponse.json({ error: 'Member not found in this club' }, { status: 404 });
     }
 
@@ -88,22 +88,22 @@ export const DELETE = requireOAuthScope(['clubs:write'])(async (
   }
 
   try {
-    // Vérifier que le membre existe et appartient au club
+    // Vérifier que le membre existe
     const member = await prisma.user.findFirst({
       where: {
         id: params.memberId,
-        userType: 'player',
-        profile: {
-          metadata: {
-            path: '$.clubId',
-            equals: params.clubId
-          }
-        }
+        userType: 'player'
       },
       include: { profile: true }
     });
 
-    if (!member) {
+    if (!member || !member.profile) {
+      return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+    }
+
+    // Vérifier que le membre appartient au club
+    const memberMetadata = member.profile.metadata as any;
+    if (memberMetadata?.clubId !== params.clubId) {
       return NextResponse.json({ error: 'Member not found in this club' }, { status: 404 });
     }
 

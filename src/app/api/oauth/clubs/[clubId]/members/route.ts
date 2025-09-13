@@ -39,7 +39,7 @@ export const GET = requireOAuthScope(['clubs:members'])(async (
         userType: 'player',
         profile: {
           metadata: {
-            path: '$.clubId',
+            path: ['$.clubId'],
             equals: params.clubId
           }
         }
@@ -53,7 +53,7 @@ export const GET = requireOAuthScope(['clubs:members'])(async (
         userType: 'player',
         profile: {
           metadata: {
-            path: '$.clubId',
+            path: ['$.clubId'],
             equals: params.clubId
           }
         }
@@ -64,7 +64,7 @@ export const GET = requireOAuthScope(['clubs:members'])(async (
         additionalFilters.AND.push({
           profile: {
             metadata: {
-              path: '$.position',
+              path: ['$.position'],
               equals: position
             }
           }
@@ -76,7 +76,7 @@ export const GET = requireOAuthScope(['clubs:members'])(async (
         additionalFilters.AND.push({
           profile: {
             metadata: {
-              path: '$.status',
+              path: ['$.status'],
               equals: status
             }
           }
@@ -95,7 +95,7 @@ export const GET = requireOAuthScope(['clubs:members'])(async (
         userType: 'player',
         profile: {
           metadata: {
-            path: '$.clubId',
+            path: ['$.clubId'],
             equals: params.clubId
           }
         }
@@ -108,7 +108,7 @@ export const GET = requireOAuthScope(['clubs:members'])(async (
         userType: 'player',
         profile: {
           metadata: {
-            path: '$.clubId',
+            path: ['$.clubId'],
             equals: params.clubId
           }
         }

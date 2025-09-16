@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireOAuthScope } from '@/lib/oauth-middleware';
 import { prisma } from '@/lib/prisma';
 import { StorageService } from '@/lib/storage-service';
+import { SessionSyncService } from '@/lib/session-sync';
 
 // GET /api/oauth/profile - Obtenir le profil de l'utilisateur connecté
 export const GET = requireOAuthScope(['profile:read'])(async (
@@ -46,11 +47,12 @@ export const GET = requireOAuthScope(['profile:read'])(async (
           country: user.profile.country,
           phone: user.profile.phone,
           language: user.profile.language,
-          avatarUrl: user.profile.avatarUrl,
+          avatarUrl: SessionSyncService.getAvatarUrl(user.profile, user.socialAccounts),
           height: user.profile.height,
           weight: user.profile.weight,
           isPartner: user.profile.isPartner,
-          metadata: user.profile.metadata
+          metadata: user.profile.metadata,
+          updatedAt: user.profile.updatedAt
         } : null,
         socialAccounts: user.socialAccounts.map(account => ({
           provider: account.provider.name,
@@ -118,8 +120,13 @@ export const PUT = requireOAuthScope(['profile:write'])(async (
     // Mettre à jour le profil
     const updatedProfile = await prisma.userProfile.update({
       where: { userId: context.user.id },
-      data: updateData
+      data: {
+        ...updateData,
+        updatedAt: new Date()
+      }
     });
+
+
 
     return NextResponse.json({
       success: true,

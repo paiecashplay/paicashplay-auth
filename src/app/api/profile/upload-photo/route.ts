@@ -49,10 +49,12 @@ export async function POST(request: NextRequest) {
     );
 
     // Mettre à jour la base de données
-    await prisma.userProfile.update({
+    console.log('📝 [UPLOAD] Updating database with URL:', photoUrl);
+    const updatedProfile = await prisma.userProfile.update({
       where: { userId: payload.sub },
       data: { avatarUrl: photoUrl }
     });
+    console.log('✅ [UPLOAD] Database updated, new avatarUrl:', updatedProfile.avatarUrl);
 
     // Supprimer l'ancienne photo si elle existe
     if (userProfile?.avatarUrl) {

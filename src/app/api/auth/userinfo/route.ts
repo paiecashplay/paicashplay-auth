@@ -92,7 +92,14 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    return NextResponse.json(userInfo);
+    const response = NextResponse.json(userInfo);
+    
+    // Headers pour éviter le cache et forcer le rafraîchissement
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
   } catch (error: any) {
     console.error('UserInfo error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

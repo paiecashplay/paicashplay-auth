@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { StorageService } from '@/lib/storage-service';
+import { SessionSyncService } from '@/lib/session-sync';
+
 import crypto from 'crypto';
 
 // POST - Upload photo de profil (OAuth)
@@ -9,10 +11,8 @@ export async function POST(request: NextRequest) {
   
   try {
     const authHeader = request.headers.get('authorization');
-    console.log('🔑 [PHOTO UPLOAD] Auth header present:', !!authHeader);
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('❌ [PHOTO UPLOAD] Missing or invalid auth header');
       return NextResponse.json({ 
         error: 'Access token required' 
       }, { status: 401 });
@@ -38,21 +38,15 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log('👤 [PHOTO UPLOAD] Token record found:', !!tokenRecord);
-    if (tokenRecord) {
-      console.log('👤 [PHOTO UPLOAD] User ID:', tokenRecord.userId);
-      console.log('👤 [PHOTO UPLOAD] Current avatar URL:', tokenRecord.user.profile?.avatarUrl);
-    }
+   
 
     if (!tokenRecord) {
-      console.log('❌ [PHOTO UPLOAD] Invalid or expired token');
       return NextResponse.json({ 
         error: 'Invalid or expired access token' 
       }, { status: 401 });
     }
 
     const scopes = tokenRecord.scope?.split(' ') || [];
-    console.log('🔐 [PHOTO UPLOAD] Token scopes:', scopes);
     
     // Vérifier que l'application a les permissions pour modifier le profil
     if (!scopes.includes('profile')) {
@@ -64,25 +58,17 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('photo') as File;
-    console.log('📁 [PHOTO UPLOAD] File received:', !!file);
 
     if (!file) {
-      console.log('❌ [PHOTO UPLOAD] No file provided');
       return NextResponse.json({ 
         error: 'No photo file provided' 
       }, { status: 400 });
     }
 
-    console.log('📁 [PHOTO UPLOAD] File details:', {
-      name: file.name,
-      type: file.type,
-      size: file.size
-    });
 
     // Vérifier le type de fichier
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      console.log('❌ [PHOTO UPLOAD] Invalid file type:', file.type);
       return NextResponse.json({ 
         error: 'Invalid file type. Only JPEG, PNG, GIF and WebP are allowed' 
       }, { status: 400 });
@@ -91,27 +77,18 @@ export async function POST(request: NextRequest) {
     // Vérifier la taille (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      console.log('❌ [PHOTO UPLOAD] File too large:', file.size);
       return NextResponse.json({ 
         error: 'File too large. Maximum size is 5MB' 
       }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    console.log('📦 [PHOTO UPLOAD] Buffer created, size:', buffer.length);
     
-    // Supprimer l'ancienne photo si elle existe
-    if (tokenRecord.user.profile?.avatarUrl) {
-      console.log('🗑️ [PHOTO UPLOAD] Deleting old photo:', tokenRecord.user.profile.avatarUrl);
-      try {
-        await StorageService.deleteProfilePhoto(tokenRecord.user.profile.avatarUrl);
-        console.log('✅ [PHOTO UPLOAD] Old photo deleted successfully');
-      } catch (error) {
-        console.warn('⚠️ [PHOTO UPLOAD] Failed to delete old profile photo:', error);
-      }
-    }
+    // Récupérer l'ancienne URL avant upload pour suppression
+    const oldAvatarUrl = tokenRecord.user.profile?.avatarUrl;
+    console.log('🔍 [PHOTO UPLOAD] Old avatar URL:', oldAvatarUrl);
 
-    // Upload la nouvelle photo
+    // Upload la nouvelle photo AVANT de supprimer l'ancienne
     console.log('☁️ [PHOTO UPLOAD] Starting upload to Google Cloud Storage...');
     const photoUrl = await StorageService.uploadProfilePhoto(
       tokenRecord.userId,
@@ -120,7 +97,7 @@ export async function POST(request: NextRequest) {
     );
     console.log('✅ [PHOTO UPLOAD] Photo uploaded successfully:', photoUrl);
 
-    // Mettre à jour le profil avec la nouvelle URL (remplace l'avatar social)
+    // Mettre à jour le profil avec la nouvelle URL
     console.log('💾 [PHOTO UPLOAD] Updating user profile in database...');
     const updatedProfile = await prisma.userProfile.upsert({
       where: { userId: tokenRecord.userId },
@@ -131,9 +108,24 @@ export async function POST(request: NextRequest) {
         avatarUrl: photoUrl
       },
       update: {
-        avatarUrl: photoUrl
+        avatarUrl: photoUrl,
+        updatedAt: new Date() // Force update timestamp
       }
     });
+
+
+
+    // Supprimer l'ancienne photo APRÈS la mise à jour réussie
+    if (oldAvatarUrl && oldAvatarUrl !== photoUrl) {
+      console.log('🗑️ [PHOTO UPLOAD] Deleting old photo:', oldAvatarUrl);
+      try {
+        await StorageService.deleteProfilePhoto(oldAvatarUrl);
+        console.log('✅ [PHOTO UPLOAD] Old photo deleted successfully');
+      } catch (error) {
+        console.warn('⚠️ [PHOTO UPLOAD] Failed to delete old profile photo:', error);
+        // Ne pas faire échouer la requête si la suppression échoue
+      }
+    }
     
     console.log('✅ [PHOTO UPLOAD] Profile updated in database:', {
       userId: updatedProfile.userId,
@@ -141,15 +133,24 @@ export async function POST(request: NextRequest) {
       updatedAt: updatedProfile.updatedAt
     });
 
-    const response = {
+
+
+    const responseData = {
       success: true,
       message: 'Profile photo updated successfully',
       picture: photoUrl,
       updated_at: Math.floor(new Date(updatedProfile.updatedAt).getTime() / 1000)
     };
     
-    console.log('📤 [PHOTO UPLOAD] Sending response:', response);
-    return NextResponse.json(response);
+    
+    const response = NextResponse.json(responseData);
+    
+    // Headers pour éviter le cache et forcer le rafraîchissement
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
   } catch (error) {
     console.error('💥 [PHOTO UPLOAD] Error occurred:', error);
     return NextResponse.json({ 
@@ -215,9 +216,14 @@ export async function DELETE(request: NextRequest) {
     const updatedProfile = await prisma.userProfile.update({
       where: { userId: tokenRecord.userId },
       data: {
-        avatarUrl: null
+        avatarUrl: null,
+        updatedAt: new Date()
       }
     });
+
+
+
+
 
     return NextResponse.json({
       success: true,

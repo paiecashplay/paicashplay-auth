@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { SessionSyncService } from '@/lib/session-sync';
 import crypto from 'crypto';
 
 // GET - Récupérer le profil utilisateur (OAuth)
@@ -55,25 +56,22 @@ export async function GET(request: NextRequest) {
     }
 
     if (scopes.includes('profile')) {
-      // Determine picture URL - prioritize uploaded photo over social avatar
-      let pictureUrl = user.profile?.avatarUrl;
-      
-      // If no uploaded photo, use social account avatar as fallback
-      if (!pictureUrl || !pictureUrl.includes('storage.googleapis.com')) {
-        const socialAvatar = user.socialAccounts.find(account => account.avatar)?.avatar;
-        if (socialAvatar && !pictureUrl) {
-          pictureUrl = socialAvatar;
-        }
-      }
-
+      // Utiliser le service pour obtenir l'URL de l'avatar
+      const pictureUrl = SessionSyncService.getAvatarUrl(user.profile, user.socialAccounts);
+      console.log("¨PrictureURL ",pictureUrl)
       if (user.profile) {
-        profileData.name = `${user.profile.firstName} ${user.profile.lastName}`.trim();
+        profileData.name = SessionSyncService.getDisplayName(user.profile, user.email);
         profileData.given_name = user.profile.firstName;
         profileData.family_name = user.profile.lastName;
         profileData.phone_number = user.profile.phone;
         profileData.locale = user.profile.language || 'fr';
         profileData.picture = pictureUrl;
         profileData.updated_at = Math.floor(new Date(user.profile.updatedAt).getTime() / 1000);
+      } else {
+        // Si pas de profil, créer des données de base
+        profileData.name = user.email;
+        profileData.picture = pictureUrl;
+        profileData.updated_at = Math.floor(new Date(user.updatedAt).getTime() / 1000);
       }
     }
 
@@ -86,7 +84,14 @@ export async function GET(request: NextRequest) {
       profileData.is_partner = true;
     }
 
-    return NextResponse.json(profileData);
+    const response = NextResponse.json(profileData);
+    
+    // Headers pour éviter le cache
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
   } catch (error) {
     console.error('Profile API error:', error);
     return NextResponse.json({ 
@@ -154,8 +159,13 @@ export async function PUT(request: NextRequest) {
         language: locale || 'fr',
         avatarUrl: picture_url || null
       },
-      update: updateData
+      update: {
+        ...updateData,
+        updatedAt: new Date()
+      }
     });
+
+
 
     return NextResponse.json({
       success: true,

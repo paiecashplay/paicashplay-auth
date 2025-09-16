@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/middleware';
+import { prisma } from '@/lib/prisma';
 
 export const GET = requireAuth(async (request: NextRequest, user: any) => {
-  return NextResponse.json({
+  console.log('🔍 [ME ENDPOINT] User from middleware:', {
+    id: user.id,
+    email: user.email,
+    profileAvatarUrl: user.profile?.avatarUrl
+  });
+  
+  // Double vérification : récupérer directement depuis la base de données
+  const freshUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    include: { profile: true }
+  });
+  
+  
+  
+  const responseData = {
     user: {
       id: user.id,
       email: user.email,
@@ -12,7 +27,13 @@ export const GET = requireAuth(async (request: NextRequest, user: any) => {
       isVerified: user.isVerified,
       isActive: true,
       createdAt: new Date().toISOString(),
-      profile: user.profile
+      profile: freshUser?.profile || user.profile
     }
+  };
+  console.log("response Data ",responseData)
+  console.log('📤 [ME ENDPOINT] Response data:', {
+    profileAvatarUrl: responseData.user.profile?.avatarUrl
   });
+  
+  return NextResponse.json(responseData);
 });

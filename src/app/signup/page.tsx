@@ -7,6 +7,8 @@ import { useToast } from '@/components/ui/Toast';
 import CountrySelect from '@/components/ui/CountrySelect';
 import PhoneInput from '@/components/ui/PhoneInput';
 import DatePicker from '@/components/ui/DatePicker';
+import BirthDatePicker from '@/components/ui/BirthDatePicker';
+
 import SocialButtons from '@/components/ui/SocialButtons';
 import ClubSelect from '@/components/ui/ClubSelect';
 import FederationSelect from '@/components/ui/FederationSelect';
@@ -193,6 +195,28 @@ export default function SignupPage() {
       setError('Les mots de passe ne correspondent pas');
       setLoading(false);
       return;
+    }
+
+    // Validation spécifique pour les joueurs
+    if (formData.userType === 'player') {
+      if (!formData.country) {
+        toast.error('Pays requis', 'Veuillez sélectionner votre pays');
+        setError('Le pays est requis pour les joueurs');
+        setLoading(false);
+        return;
+      }
+      if (!formData.dateOfBirth) {
+        toast.error('Date de naissance requise', 'Veuillez sélectionner votre date de naissance');
+        setError('La date de naissance est requise pour les joueurs');
+        setLoading(false);
+        return;
+      }
+      if (!formData.position) {
+        toast.error('Position requise', 'Veuillez sélectionner votre position');
+        setError('La position est requise pour les joueurs');
+        setLoading(false);
+        return;
+      }
     }
 
     try {
@@ -440,24 +464,33 @@ export default function SignupPage() {
                         />
                       </div>
                     </div>
-                    <div>
-                      <DatePicker
-                        value={formData.dateOfBirth}
-                        onChange={(date) => setFormData({ ...formData, dateOfBirth: date })}
-                        label="Date de naissance"
-                        placeholder="Sélectionnez votre date de naissance"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-3">
-                        Téléphone
-                      </label>
-                      <PhoneInput
-                        value={formData.phone}
-                        onChange={(phone) => setFormData({ ...formData, phone })}
-                        placeholder="1 23 45 67 89"
-                      />
+                    <BirthDatePicker
+                      value={formData.dateOfBirth}
+                      onChange={(date) => setFormData({ ...formData, dateOfBirth: date })}
+                      userType="player"
+                      required
+                    />
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Téléphone
+                        </label>
+                        <PhoneInput
+                          value={formData.phone}
+                          onChange={(phone) => setFormData({ ...formData, phone })}
+                          placeholder="1 23 45 67 89"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Pays <span className="text-red-500">*</span>
+                        </label>
+                        <CountrySelect
+                          value={formData.country}
+                          onChange={(country) => setFormData({ ...formData, country })}
+                          placeholder="Sélectionnez votre pays"
+                        />
+                      </div>
                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
@@ -486,6 +519,10 @@ export default function SignupPage() {
                           onChange={(club) => setFormData({ ...formData, clubName: club })}
                           placeholder="Sélectionnez votre club"
                         />
+                        <p className="text-xs text-gray-500 mt-1">
+                          <i className="fas fa-info-circle mr-1"></i>
+                          Si aucun club n'est sélectionné, vous serez associé au PaieCashPlay Club
+                        </p>
                       </div>
                     </div>
                   </div>

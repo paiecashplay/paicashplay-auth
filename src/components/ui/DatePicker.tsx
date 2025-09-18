@@ -9,6 +9,9 @@ interface DatePickerProps {
   className?: string;
   required?: boolean;
   label?: string;
+  minDate?: string;
+  maxDate?: string;
+  disabled?: boolean;
 }
 
 const MONTHS = [
@@ -24,7 +27,10 @@ export default function DatePicker({
   placeholder = "Sélectionner une date", 
   className = '', 
   required = false,
-  label 
+  label,
+  minDate,
+  maxDate,
+  disabled = false
 }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
@@ -55,6 +61,11 @@ export default function DatePicker({
   const handleDateSelect = (day: number) => {
     const date = new Date(currentYear, currentMonth, day);
     const isoString = date.toISOString().split('T')[0];
+    
+    // Vérifier les limites de date
+    if (minDate && isoString < minDate) return;
+    if (maxDate && isoString > maxDate) return;
+    
     onChange(isoString);
     setIsOpen(false);
   };
@@ -81,6 +92,9 @@ export default function DatePicker({
 
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
+      const dayDate = new Date(currentYear, currentMonth, day);
+      const dayIsoString = dayDate.toISOString().split('T')[0];
+      
       const isSelected = selectedDate && 
         selectedDate.getDate() === day && 
         selectedDate.getMonth() === currentMonth && 
@@ -89,18 +103,25 @@ export default function DatePicker({
       const isToday = new Date().getDate() === day && 
         new Date().getMonth() === currentMonth && 
         new Date().getFullYear() === currentYear;
+      
+      const isDisabled = 
+        (minDate && dayIsoString < minDate) || 
+        (maxDate && dayIsoString > maxDate);
 
       days.push(
         <button
           key={day}
           type="button"
-          onClick={() => handleDateSelect(day)}
+          onClick={() => !isDisabled && handleDateSelect(day)}
+          disabled={isDisabled}
           className={`w-9 h-9 text-sm rounded-lg font-medium transition-all duration-200 ${
-            isSelected 
-              ? 'bg-emerald-500 text-white shadow-md' 
-              : isToday 
-                ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' 
-                : 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-600'
+            isDisabled
+              ? 'text-gray-300 cursor-not-allowed'
+              : isSelected 
+                ? 'bg-emerald-500 text-white shadow-md' 
+                : isToday 
+                  ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' 
+                  : 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-600'
           }`}
         >
           {day}
@@ -111,23 +132,7 @@ export default function DatePicker({
     return days;
   };
 
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    if (direction === 'prev') {
-      if (currentMonth === 0) {
-        setCurrentMonth(11);
-        setCurrentYear(currentYear - 1);
-      } else {
-        setCurrentMonth(currentMonth - 1);
-      }
-    } else {
-      if (currentMonth === 11) {
-        setCurrentMonth(0);
-        setCurrentYear(currentYear + 1);
-      } else {
-        setCurrentMonth(currentMonth + 1);
-      }
-    }
-  };
+
 
   return (
     <div className={className}>
@@ -140,66 +145,60 @@ export default function DatePicker({
       
       <div className="relative" ref={dropdownRef}>
         <div 
-          className="relative cursor-pointer"
-          onClick={() => setIsOpen(true)}
+          className={`relative ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+          onClick={() => !disabled && setIsOpen(true)}
         >
-          <i className="fas fa-calendar-alt absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-500 z-10"></i>
+          <i className={`fas fa-calendar-alt absolute left-4 top-1/2 transform -translate-y-1/2 z-10 ${
+            disabled ? 'text-gray-300' : 'text-emerald-500'
+          }`}></i>
           <input
             type="text"
             value={value ? formatDisplayDate(value) : ''}
             placeholder={placeholder}
             readOnly
-            className="w-full pl-12 pr-12 py-3 bg-white border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all duration-200 text-gray-900 placeholder-gray-400 cursor-pointer font-medium"
-            onClick={() => setIsOpen(true)}
+            disabled={disabled}
+            className={`w-full pl-12 pr-12 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200 font-medium ${
+              disabled 
+                ? 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-white border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 text-gray-900 placeholder-gray-400 cursor-pointer'
+            }`}
+            onClick={() => !disabled && setIsOpen(true)}
           />
-          <i className={`fas fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-emerald-400 transition-transform duration-200 pointer-events-none ${
-            isOpen ? 'rotate-180' : ''
-          }`}></i>
+          <i className={`fas fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 transition-transform duration-200 pointer-events-none ${
+            disabled ? 'text-gray-300' : 'text-emerald-400'
+          } ${isOpen ? 'rotate-180' : ''}`}></i>
         </div>
 
         {isOpen && (
           <div className="absolute z-50 mt-2 bg-white border border-emerald-200 rounded-xl shadow-2xl w-full sm:w-80 p-5 backdrop-blur-sm">
-            {/* Header with month/year navigation */}
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center space-x-1">
-                <button
-                  type="button"
-                  onClick={() => setCurrentYear(currentYear - 1)}
-                  className="p-2 hover:bg-emerald-50 rounded-lg text-emerald-600 hover:text-emerald-700 transition-colors"
-                >
-                  <i className="fas fa-angle-double-left"></i>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigateMonth('prev')}
-                  className="p-2 hover:bg-emerald-50 rounded-lg text-emerald-600 hover:text-emerald-700 transition-colors"
-                >
-                  <i className="fas fa-angle-left"></i>
-                </button>
-              </div>
+            {/* Header with month/year selectors */}
+            <div className="flex items-center justify-center gap-4 mb-5">
+              <select
+                value={currentMonth}
+                onChange={(e) => setCurrentMonth(parseInt(e.target.value))}
+                className="px-3 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-gray-800 font-medium"
+              >
+                {MONTHS.map((month, index) => (
+                  <option key={index} value={index}>{month}</option>
+                ))}
+              </select>
               
-              <div className="text-center">
-                <div className="font-bold text-lg text-gray-800">
-                  {MONTHS[currentMonth]} {currentYear}
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-1">
-                <button
-                  type="button"
-                  onClick={() => navigateMonth('next')}
-                  className="p-2 hover:bg-emerald-50 rounded-lg text-emerald-600 hover:text-emerald-700 transition-colors"
-                >
-                  <i className="fas fa-angle-right"></i>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCurrentYear(currentYear + 1)}
-                  className="p-2 hover:bg-emerald-50 rounded-lg text-emerald-600 hover:text-emerald-700 transition-colors"
-                >
-                  <i className="fas fa-angle-double-right"></i>
-                </button>
-              </div>
+              <select
+                value={currentYear}
+                onChange={(e) => setCurrentYear(parseInt(e.target.value))}
+                className="px-3 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-gray-800 font-medium"
+              >
+                {(() => {
+                  const currentYear = new Date().getFullYear();
+                  const startYear = minDate ? new Date(minDate).getFullYear() : currentYear - 100;
+                  const endYear = maxDate ? new Date(maxDate).getFullYear() : currentYear;
+                  const years = [];
+                  for (let year = endYear; year >= startYear; year--) {
+                    years.push(<option key={year} value={year}>{year}</option>);
+                  }
+                  return years;
+                })()}
+              </select>
             </div>
 
             {/* Days of week header */}
@@ -221,10 +220,17 @@ export default function DatePicker({
               <button
                 type="button"
                 onClick={() => {
-                  onChange(new Date().toISOString().split('T')[0]);
-                  setIsOpen(false);
+                  const today = new Date().toISOString().split('T')[0];
+                  if ((!minDate || today >= minDate) && (!maxDate || today <= maxDate)) {
+                    onChange(today);
+                    setIsOpen(false);
+                  }
                 }}
-                className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold px-3 py-1 rounded-lg hover:bg-emerald-50 transition-colors"
+                disabled={(() => {
+                  const today = new Date().toISOString().split('T')[0];
+                  return (minDate && today < minDate) || (maxDate && today > maxDate);
+                })()}
+                className="text-sm font-semibold px-3 py-1 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
               >
                 <i className="fas fa-calendar-day mr-1"></i>
                 Aujourd'hui

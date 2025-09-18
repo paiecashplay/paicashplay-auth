@@ -6,34 +6,39 @@ interface Country {
   code: string;
   name: string;
   flag: string;
-  dialCode: string;
+  dialCode?: string;
 }
 
-const COUNTRIES: Country[] = [
+// Pays de fallback pour PhoneInput (avec dialCode obligatoire)
+const FALLBACK_COUNTRIES: Country[] = [
   { code: 'FR', name: 'France', flag: '🇫🇷', dialCode: '+33' },
   { code: 'CM', name: 'Cameroun', flag: '🇨🇲', dialCode: '+237' },
   { code: 'SN', name: 'Sénégal', flag: '🇸🇳', dialCode: '+221' },
   { code: 'CI', name: 'Côte d\'Ivoire', flag: '🇨🇮', dialCode: '+225' },
   { code: 'MA', name: 'Maroc', flag: '🇲🇦', dialCode: '+212' },
-  { code: 'DZ', name: 'Algérie', flag: '🇩🇿', dialCode: '+213' },
-  { code: 'TN', name: 'Tunisie', flag: '🇹🇳', dialCode: '+216' },
-  { code: 'NG', name: 'Nigeria', flag: '🇳🇬', dialCode: '+234' },
-  { code: 'GH', name: 'Ghana', flag: '🇬🇭', dialCode: '+233' },
-  { code: 'KE', name: 'Kenya', flag: '🇰🇪', dialCode: '+254' },
-  { code: 'ZA', name: 'Afrique du Sud', flag: '🇿🇦', dialCode: '+27' },
-  { code: 'EG', name: 'Égypte', flag: '🇪🇬', dialCode: '+20' },
   { code: 'US', name: 'États-Unis', flag: '🇺🇸', dialCode: '+1' },
   { code: 'CA', name: 'Canada', flag: '🇨🇦', dialCode: '+1' },
   { code: 'GB', name: 'Royaume-Uni', flag: '🇬🇧', dialCode: '+44' },
   { code: 'DE', name: 'Allemagne', flag: '🇩🇪', dialCode: '+49' },
-  { code: 'IT', name: 'Italie', flag: '🇮🇹', dialCode: '+39' },
-  { code: 'ES', name: 'Espagne', flag: '🇪🇸', dialCode: '+34' },
-  { code: 'PT', name: 'Portugal', flag: '🇵🇹', dialCode: '+351' },
-  { code: 'BE', name: 'Belgique', flag: '🇧🇪', dialCode: '+32' },
-  { code: 'CH', name: 'Suisse', flag: '🇨🇭', dialCode: '+41' },
-  { code: 'BR', name: 'Brésil', flag: '🇧🇷', dialCode: '+55' },
-  { code: 'AR', name: 'Argentine', flag: '🇦🇷', dialCode: '+54' }
+  { code: 'IT', name: 'Italie', flag: '🇮🇹', dialCode: '+39' }
 ];
+
+// Fonction pour récupérer les pays avec indicatifs téléphoniques
+const fetchCountriesWithDialCodes = async (): Promise<Country[]> => {
+  try {
+    const response = await fetch('/api/countries');
+    if (!response.ok) {
+      throw new Error('Failed to fetch countries');
+    }
+    
+    const data = await response.json();
+    // Filtrer seulement les pays avec indicatifs téléphoniques
+    return data.countries.filter((country: Country) => country.dialCode) || FALLBACK_COUNTRIES;
+  } catch (error) {
+    console.warn('Failed to fetch countries, using fallback:', error);
+    return FALLBACK_COUNTRIES;
+  }
+};
 
 interface PhoneInputProps {
   value: string;
@@ -44,17 +49,41 @@ interface PhoneInputProps {
 }
 
 export default function PhoneInput({ value, onChange, placeholder = "Numéro de téléphone", className = '', required = false }: PhoneInputProps) {
-  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]); // France par défaut
+  const [countries, setCountries] = useState<Country[]>(FALLBACK_COUNTRIES);
+  const [selectedCountry, setSelectedCountry] = useState<Country>(FALLBACK_COUNTRIES[0]); // France par défaut
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [loading, setLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const filteredCountries = COUNTRIES.filter(country =>
+  const filteredCountries = countries.filter(country =>
     country.name.toLowerCase().includes(search.toLowerCase()) ||
-    country.dialCode.includes(search) ||
+    (country.dialCode && country.dialCode.includes(search)) ||
     country.code.toLowerCase().includes(search.toLowerCase())
   );
+
+  useEffect(() => {
+    const loadCountries = async () => {
+      setLoading(true);
+      try {
+        const fetchedCountries = await fetchCountriesWithDialCodes();
+        setCountries(fetchedCountries);
+        // Garder la France par défaut si disponible
+        const france = fetchedCountries.find(c => c.code === 'FR');
+        if (france) {
+          setSelectedCountry(france);
+        }
+      } catch (error) {
+        console.error('Error loading countries:', error);
+        setCountries(FALLBACK_COUNTRIES);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadCountries();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -70,14 +99,14 @@ export default function PhoneInput({ value, onChange, placeholder = "Numéro de 
 
   useEffect(() => {
     // Parse existing value
-    if (value && !phoneNumber) {
-      const country = COUNTRIES.find(c => value.startsWith(c.dialCode));
-      if (country) {
+    if (value && !phoneNumber && countries.length > 0) {
+      const country = countries.find(c => c.dialCode && value.startsWith(c.dialCode));
+      if (country && country.dialCode) {
         setSelectedCountry(country);
         setPhoneNumber(value.substring(country.dialCode.length).trim());
       }
     }
-  }, [value, phoneNumber]);
+  }, [value, phoneNumber, countries]);
 
   const handleCountrySelect = (country: Country) => {
     setSelectedCountry(country);
@@ -89,7 +118,7 @@ export default function PhoneInput({ value, onChange, placeholder = "Numéro de 
 
   const handlePhoneChange = (phone: string) => {
     setPhoneNumber(phone);
-    const fullPhone = phone ? `${selectedCountry.dialCode} ${phone}` : '';
+    const fullPhone = phone && selectedCountry.dialCode ? `${selectedCountry.dialCode} ${phone}` : '';
     onChange(fullPhone);
   };
 
@@ -104,8 +133,8 @@ export default function PhoneInput({ value, onChange, placeholder = "Numéro de 
             className="flex items-center px-2 sm:px-3 py-3 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-paiecash focus:border-transparent transition-colors min-w-0"
           >
             <span className="text-base sm:text-lg mr-1 sm:mr-2">{selectedCountry.flag}</span>
-            <span className="text-xs sm:text-sm font-medium hidden xs:inline">{selectedCountry.dialCode}</span>
-            <span className="text-xs sm:text-sm font-medium xs:hidden">{selectedCountry.dialCode.replace('+', '')}</span>
+            <span className="text-xs sm:text-sm font-medium hidden xs:inline">{selectedCountry.dialCode || ''}</span>
+            <span className="text-xs sm:text-sm font-medium xs:hidden">{selectedCountry.dialCode?.replace('+', '') || ''}</span>
             <i className={`fas fa-chevron-down ml-1 sm:ml-2 text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`}></i>
           </button>
 
@@ -134,7 +163,7 @@ export default function PhoneInput({ value, onChange, placeholder = "Numéro de 
                     <span className="text-base sm:text-lg mr-2 sm:mr-3">{country.flag}</span>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm sm:text-base truncate">{country.name}</div>
-                      <div className="text-xs sm:text-sm text-gray-500">{country.dialCode}</div>
+                      <div className="text-xs sm:text-sm text-gray-500">{country.dialCode || 'N/A'}</div>
                     </div>
                   </button>
                 ))}

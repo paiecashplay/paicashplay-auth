@@ -6,10 +6,16 @@ interface Country {
   code: string;
   name: string;
   flag: string;
-  dialCode: string;
+  dialCode?: string;
 }
 
-const COUNTRIES: Country[] = [
+// Cache pour éviter les appels répétés à l'API
+let countriesCache: Country[] | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 heures
+
+// Pays de fallback en cas d'échec de l'API
+const FALLBACK_COUNTRIES: Country[] = [
   { code: 'FR', name: 'France', flag: '🇫🇷', dialCode: '+33' },
   { code: 'CM', name: 'Cameroun', flag: '🇨🇲', dialCode: '+237' },
   { code: 'SN', name: 'Sénégal', flag: '🇸🇳', dialCode: '+221' },
@@ -19,9 +25,6 @@ const COUNTRIES: Country[] = [
   { code: 'TN', name: 'Tunisie', flag: '🇹🇳', dialCode: '+216' },
   { code: 'NG', name: 'Nigeria', flag: '🇳🇬', dialCode: '+234' },
   { code: 'GH', name: 'Ghana', flag: '🇬🇭', dialCode: '+233' },
-  { code: 'KE', name: 'Kenya', flag: '🇰🇪', dialCode: '+254' },
-  { code: 'ZA', name: 'Afrique du Sud', flag: '🇿🇦', dialCode: '+27' },
-  { code: 'EG', name: 'Égypte', flag: '🇪🇬', dialCode: '+20' },
   { code: 'US', name: 'États-Unis', flag: '🇺🇸', dialCode: '+1' },
   { code: 'CA', name: 'Canada', flag: '🇨🇦', dialCode: '+1' },
   { code: 'GB', name: 'Royaume-Uni', flag: '🇬🇧', dialCode: '+44' },
@@ -31,9 +34,70 @@ const COUNTRIES: Country[] = [
   { code: 'PT', name: 'Portugal', flag: '🇵🇹', dialCode: '+351' },
   { code: 'BE', name: 'Belgique', flag: '🇧🇪', dialCode: '+32' },
   { code: 'CH', name: 'Suisse', flag: '🇨🇭', dialCode: '+41' },
-  { code: 'BR', name: 'Brésil', flag: '🇧🇷', dialCode: '+55' },
-  { code: 'AR', name: 'Argentine', flag: '🇦🇷', dialCode: '+54' }
+  { code: 'BR', name: 'Brésil', flag: '🇧🇷', dialCode: '+55' }
 ];
+
+// Fonction pour obtenir le drapeau emoji à partir du code pays
+const getFlagEmoji = (countryCode: string): string => {
+  return countryCode
+    .toUpperCase()
+    .replace(/./g, char => String.fromCodePoint(127397 + char.charCodeAt(0)));
+};
+
+// Traductions des noms de pays en français
+const COUNTRY_TRANSLATIONS: Record<string, string> = {
+  'Afghanistan': 'Afghanistan',
+  'Albania': 'Albanie',
+  'Algeria': 'Algérie',
+  'Argentina': 'Argentine',
+  'Australia': 'Australie',
+  'Austria': 'Autriche',
+  'Belgium': 'Belgique',
+  'Brazil': 'Brésil',
+  'Cameroon': 'Cameroun',
+  'Canada': 'Canada',
+  'China': 'Chine',
+  'Côte d\'Ivoire': 'Côte d\'Ivoire',
+  'Egypt': 'Égypte',
+  'France': 'France',
+  'Germany': 'Allemagne',
+  'Ghana': 'Ghana',
+  'Italy': 'Italie',
+  'Japan': 'Japon',
+  'Kenya': 'Kenya',
+  'Morocco': 'Maroc',
+  'Nigeria': 'Nigeria',
+  'Portugal': 'Portugal',
+  'Senegal': 'Sénégal',
+  'South Africa': 'Afrique du Sud',
+  'Spain': 'Espagne',
+  'Switzerland': 'Suisse',
+  'Tunisia': 'Tunisie',
+  'United Kingdom': 'Royaume-Uni',
+  'United States': 'États-Unis'
+};
+
+// Fonction pour récupérer les pays depuis notre API locale
+const fetchCountries = async (searchTerm?: string): Promise<Country[]> => {
+  try {
+    const url = new URL('/api/countries', window.location.origin);
+    if (searchTerm) {
+      url.searchParams.set('search', searchTerm);
+    }
+    
+    const response = await fetch(url.toString());
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch countries');
+    }
+    
+    const data = await response.json();
+    return data.countries || FALLBACK_COUNTRIES;
+  } catch (error) {
+    console.warn('Failed to fetch countries from API, using fallback:', error);
+    return FALLBACK_COUNTRIES;
+  }
+};
 
 interface CountrySelectProps {
   value: string;
@@ -45,13 +109,52 @@ interface CountrySelectProps {
 export default function CountrySelect({ value, onChange, placeholder = "Sélectionnez un pays", className = '' }: CountrySelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [countries, setCountries] = useState<Country[]>(FALLBACK_COUNTRIES);
+  const [loading, setLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const selectedCountry = COUNTRIES.find(c => c.name === value || c.code === value);
-  const filteredCountries = COUNTRIES.filter(country =>
-    country.name.toLowerCase().includes(search.toLowerCase()) ||
-    country.code.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    const loadCountries = async () => {
+      setLoading(true);
+      try {
+        const fetchedCountries = await fetchCountries();
+        setCountries(fetchedCountries);
+      } catch (error) {
+        console.error('Error loading countries:', error);
+        setCountries(FALLBACK_COUNTRIES);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadCountries();
+  }, []);
+
+  // Recherche avec debounce
+  useEffect(() => {
+    if (!search.trim()) {
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const searchResults = await fetchCountries(search);
+        setCountries(searchResults);
+      } catch (error) {
+        console.error('Error searching countries:', error);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [search]);
+
+  const selectedCountry = countries.find(c => c.name === value || c.code === value);
+  const filteredCountries = search.trim() 
+    ? countries // Les résultats sont déjà filtrés par l'API
+    : countries.filter(country =>
+        country.name.toLowerCase().includes(search.toLowerCase()) ||
+        country.code.toLowerCase().includes(search.toLowerCase())
+      );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -77,9 +180,15 @@ export default function CountrySelect({ value, onChange, placeholder = "Sélecti
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="input-field flex items-center justify-between w-full text-left"
+        disabled={loading}
       >
         <div className="flex items-center">
-          {selectedCountry ? (
+          {loading ? (
+            <>
+              <i className="fas fa-spinner fa-spin mr-2 text-gray-400"></i>
+              <span className="text-gray-500">Chargement des pays...</span>
+            </>
+          ) : selectedCountry ? (
             <>
               <span className="text-lg mr-2">{selectedCountry.flag}</span>
               <span>{selectedCountry.name}</span>
@@ -88,7 +197,7 @@ export default function CountrySelect({ value, onChange, placeholder = "Sélecti
             <span className="text-gray-500">{placeholder}</span>
           )}
         </div>
-        <i className={`fas fa-chevron-down transition-transform ${isOpen ? 'rotate-180' : ''}`}></i>
+        <i className={`fas fa-chevron-down transition-transform ${isOpen ? 'rotate-180' : ''} ${loading ? 'opacity-50' : ''}`}></i>
       </button>
 
       {isOpen && (
@@ -115,14 +224,24 @@ export default function CountrySelect({ value, onChange, placeholder = "Sélecti
               >
                 <span className="text-lg mr-3">{country.flag}</span>
                 <span className="flex-1">{country.name}</span>
-                <span className="text-sm text-gray-500">{country.code}</span>
+                <div className="flex flex-col items-end">
+                  <span className="text-sm text-gray-500">{country.code}</span>
+                  {country.dialCode && (
+                    <span className="text-xs text-gray-400">{country.dialCode}</span>
+                  )}
+                </div>
               </button>
             ))}
             {filteredCountries.length === 0 && (
               <div className="px-4 py-3 text-gray-500 text-center">
-                Aucun pays trouvé
+                <i className="fas fa-search mr-2"></i>
+                Aucun pays trouvé pour "{search}"
               </div>
             )}
+          </div>
+          <div className="px-3 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 text-center">
+            <i className="fas fa-globe mr-1"></i>
+            {countries.length} pays disponibles
           </div>
         </div>
       )}

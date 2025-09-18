@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
+import CountrySelect from '@/components/ui/CountrySelect';
 
 interface User {
   id: string;
@@ -275,20 +276,11 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                     <i className="fas fa-globe mr-2 text-paiecash"></i>
                     Pays
                   </label>
-                  <select
+                  <CountrySelect
                     value={formData.country}
-                    onChange={(e) => setFormData({...formData, country: e.target.value})}
-                    className="input-field"
-                  >
-                    <option value="">Sélectionner un pays</option>
-                    <option value="FR">France</option>
-                    <option value="BE">Belgique</option>
-                    <option value="CH">Suisse</option>
-                    <option value="CA">Canada</option>
-                    <option value="MA">Maroc</option>
-                    <option value="SN">Sénégal</option>
-                    <option value="CI">Côte d'Ivoire</option>
-                  </select>
+                    onChange={(country) => setFormData({...formData, country})}
+                    placeholder="Sélectionner un pays"
+                  />
                 </div>
               </div>
 
@@ -308,6 +300,10 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                   <option value="club">Club</option>
                   <option value="federation">Fédération</option>
                   <option value="company">Société</option>
+                  <option value="affiliate">Ambassadeur</option>
+                  <option value="academy">Académie</option>
+                  <option value="school">École</option>
+                  <option value="association">Association</option>
                 </select>
               </div>
 
@@ -353,100 +349,294 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
               </div>
 
               {/* Informations spécifiques par type d'utilisateur */}
-              {user.profile?.metadata && (
+              {(user.profile?.metadata || user.userType) && (
                 <div className="pt-6 border-t border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     {user.userType === 'federation' && 'Informations Fédération'}
                     {user.userType === 'club' && 'Informations Club'}
                     {user.userType === 'player' && 'Informations Licencié'}
                     {user.userType === 'company' && 'Informations Société'}
+                    {user.userType === 'affiliate' && 'Informations Ambassadeur'}
+                    {user.userType === 'academy' && 'Informations Académie'}
+                    {user.userType === 'school' && 'Informations École'}
+                    {user.userType === 'association' && 'Informations Association'}
+                    {user.userType === 'donor' && 'Informations Donateur'}
                   </h3>
                   <div className="space-y-4">
-                    {/* Fédération */}
-                    {user.userType === 'federation' && user.profile.metadata.organizationName && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          <i className="fas fa-flag mr-2 text-paiecash"></i>
-                          Nom de la fédération
-                        </label>
-                        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
-                          {user.profile.metadata.organizationName}
-                        </div>
-                      </div>
-                    )}
-                    {user.userType === 'federation' && user.profile.metadata.position && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          <i className="fas fa-briefcase mr-2 text-paiecash"></i>
-                          Fonction
-                        </label>
-                        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
-                          {user.profile.metadata.position}
-                        </div>
-                      </div>
+                    {/* Joueur */}
+                    {user.userType === 'player' && (
+                      <>
+                        {user.profile?.metadata?.dateOfBirth && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-calendar mr-2 text-paiecash"></i>
+                              Date de naissance
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {new Date(user.profile.metadata.dateOfBirth).toLocaleDateString('fr-FR')}
+                              {(() => {
+                                const birthDate = new Date(user.profile.metadata.dateOfBirth);
+                                const today = new Date();
+                                let age = today.getFullYear() - birthDate.getFullYear();
+                                const monthDiff = today.getMonth() - birthDate.getMonth();
+                                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                                  age--;
+                                }
+                                return ` (${age} ans)`;
+                              })()} 
+                            </div>
+                          </div>
+                        )}
+                        {user.profile?.metadata?.position && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-running mr-2 text-paiecash"></i>
+                              Position
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.position === 'goalkeeper' && 'Gardien'}
+                              {user.profile.metadata.position === 'defender' && 'Défenseur'}
+                              {user.profile.metadata.position === 'midfielder' && 'Milieu'}
+                              {user.profile.metadata.position === 'forward' && 'Attaquant'}
+                            </div>
+                          </div>
+                        )}
+                        {user.profile?.metadata?.club && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-users mr-2 text-paiecash"></i>
+                              Club
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.club}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                     
                     {/* Club */}
-                    {user.userType === 'club' && user.profile.metadata.organizationName && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          <i className="fas fa-users mr-2 text-paiecash"></i>
-                          Nom du club
-                        </label>
-                        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
-                          {user.profile.metadata.organizationName}
-                        </div>
-                      </div>
+                    {user.userType === 'club' && (
+                      <>
+                        {user.profile?.metadata?.organizationName && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-users mr-2 text-paiecash"></i>
+                              Nom du club
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.organizationName}
+                            </div>
+                          </div>
+                        )}
+                        {user.profile?.metadata?.federation && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-flag mr-2 text-paiecash"></i>
+                              Fédération
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.federation}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                     
-                    {/* Licencié */}
-                    {user.userType === 'player' && user.profile.metadata.position && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          <i className="fas fa-running mr-2 text-paiecash"></i>
-                          Position
-                        </label>
-                        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
-                          {user.profile.metadata.position === 'goalkeeper' && 'Gardien'}
-                          {user.profile.metadata.position === 'defender' && 'Défenseur'}
-                          {user.profile.metadata.position === 'midfielder' && 'Milieu'}
-                          {user.profile.metadata.position === 'forward' && 'Attaquant'}
-                        </div>
-                      </div>
-                    )}
-                    {user.userType === 'player' && user.profile.metadata.dateOfBirth && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          <i className="fas fa-calendar mr-2 text-paiecash"></i>
-                          Date de naissance
-                        </label>
-                        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
-                          {new Date(user.profile.metadata.dateOfBirth).toLocaleDateString('fr-FR')}
-                        </div>
-                      </div>
+                    {/* Fédération */}
+                    {user.userType === 'federation' && (
+                      <>
+                        {user.profile?.metadata?.organizationName && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-flag mr-2 text-paiecash"></i>
+                              Nom de la fédération
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.organizationName}
+                            </div>
+                          </div>
+                        )}
+                        {user.profile?.metadata?.position && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-briefcase mr-2 text-paiecash"></i>
+                              Fonction
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.position}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                     
                     {/* Société */}
-                    {user.userType === 'company' && user.profile.metadata.companyName && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          <i className="fas fa-briefcase mr-2 text-paiecash"></i>
-                          Nom de la société
-                        </label>
-                        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
-                          {user.profile.metadata.companyName}
-                        </div>
-                      </div>
+                    {user.userType === 'company' && (
+                      <>
+                        {user.profile?.metadata?.companyName && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-briefcase mr-2 text-paiecash"></i>
+                              Nom de la société
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.companyName}
+                            </div>
+                          </div>
+                        )}
+                        {user.profile?.metadata?.siret && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-id-card mr-2 text-paiecash"></i>
+                              SIRET
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.siret}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
-                    {user.userType === 'company' && user.profile.metadata.siret && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          <i className="fas fa-id-card mr-2 text-paiecash"></i>
-                          SIRET
-                        </label>
-                        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
-                          {user.profile.metadata.siret}
-                        </div>
+                    
+                    {/* Ambassadeur */}
+                    {user.userType === 'affiliate' && (
+                      <>
+                        {user.profile?.metadata?.activityType && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-bullhorn mr-2 text-paiecash"></i>
+                              Type d'activité
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.activityType === 'influencer' && 'Influenceur'}
+                              {user.profile.metadata.activityType === 'content_creator' && 'Créateur de contenu'}
+                              {user.profile.metadata.activityType === 'blogger' && 'Blogueur'}
+                              {user.profile.metadata.activityType === 'youtuber' && 'YouTuber'}
+                              {user.profile.metadata.activityType === 'podcaster' && 'Podcaster'}
+                              {user.profile.metadata.activityType === 'community_manager' && 'Community Manager'}
+                              {user.profile.metadata.activityType === 'other' && 'Autre'}
+                            </div>
+                          </div>
+                        )}
+                        {user.profile?.metadata?.platform && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-globe mr-2 text-paiecash"></i>
+                              Plateforme principale
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.platform}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* Académie */}
+                    {user.userType === 'academy' && (
+                      <>
+                        {user.profile?.metadata?.organizationName && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-graduation-cap mr-2 text-paiecash"></i>
+                              Nom de l'académie
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.organizationName}
+                            </div>
+                          </div>
+                        )}
+                        {user.profile?.metadata?.position && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-dumbbell mr-2 text-paiecash"></i>
+                              Spécialité
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.position === 'football' && 'Football'}
+                              {user.profile.metadata.position === 'basketball' && 'Basketball'}
+                              {user.profile.metadata.position === 'tennis' && 'Tennis'}
+                              {user.profile.metadata.position === 'rugby' && 'Rugby'}
+                              {user.profile.metadata.position === 'handball' && 'Handball'}
+                              {user.profile.metadata.position === 'volleyball' && 'Volleyball'}
+                              {user.profile.metadata.position === 'multisport' && 'Multisport'}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* École */}
+                    {user.userType === 'school' && (
+                      <>
+                        {user.profile?.metadata?.organizationName && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-school mr-2 text-paiecash"></i>
+                              Nom de l'école
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.organizationName}
+                            </div>
+                          </div>
+                        )}
+                        {user.profile?.metadata?.position && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-building mr-2 text-paiecash"></i>
+                              Type d'établissement
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.position === 'primaire' && 'École primaire'}
+                              {user.profile.metadata.position === 'college' && 'Collège'}
+                              {user.profile.metadata.position === 'lycee' && 'Lycée'}
+                              {user.profile.metadata.position === 'universite' && 'Université'}
+                              {user.profile.metadata.position === 'prive' && 'Établissement privé'}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* Association */}
+                    {user.userType === 'association' && (
+                      <>
+                        {user.profile?.metadata?.organizationName && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-handshake mr-2 text-paiecash"></i>
+                              Nom de l'association
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.organizationName}
+                            </div>
+                          </div>
+                        )}
+                        {user.profile?.metadata?.position && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <i className="fas fa-tags mr-2 text-paiecash"></i>
+                              Type d'association
+                            </label>
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-600">
+                              {user.profile.metadata.position === 'sportive' && 'Association sportive'}
+                              {user.profile.metadata.position === 'culturelle' && 'Association culturelle'}
+                              {user.profile.metadata.position === 'caritative' && 'Association caritative'}
+                              {user.profile.metadata.position === 'educative' && 'Association éducative'}
+                              {user.profile.metadata.position === 'jeunesse' && 'Association de jeunesse'}
+                              {user.profile.metadata.position === 'autre' && 'Autre'}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* Message si aucune métadonnée */}
+                    {!user.profile?.metadata && (
+                      <div className="text-center py-4">
+                        <i className="fas fa-info-circle text-2xl text-gray-400 mb-2"></i>
+                        <p className="text-sm text-gray-500">Aucune information spécifique renseignée</p>
                       </div>
                     )}
                   </div>

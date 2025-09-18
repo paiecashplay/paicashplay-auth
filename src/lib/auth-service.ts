@@ -37,6 +37,27 @@ export class AuthService {
     // Hash password
     const passwordHash = await hashPassword(password);
     
+    // Pour les joueurs, gérer l'association au club par défaut
+    let finalMetadata = metadata || {};
+    if (userType === 'player') {
+      // Si aucun club n'est spécifié, associer au club par défaut
+      if (!finalMetadata.club) {
+        const defaultClub = await prisma.user.findFirst({
+          where: {
+            userType: 'club',
+            email: 'club@paiecashplay.com'
+          },
+          include: { profile: true }
+        });
+        
+        if (defaultClub?.profile?.metadata?.organizationName) {
+          finalMetadata.club = defaultClub.profile.metadata.organizationName;
+        } else {
+          finalMetadata.club = 'PaieCashPlay Club';
+        }
+      }
+    }
+    
     // Create user and profile in transaction
     const user = await prisma.user.create({
       data: {
@@ -50,7 +71,7 @@ export class AuthService {
             phone: phone || null,
             country: country || null,
             isPartner: isPartner || false,
-            metadata: metadata || null
+            metadata: finalMetadata
           }
         }
       },

@@ -247,7 +247,26 @@ export default function ProfileManager() {
               ) : (
                 <input
                   type="text"
-                  value={formData.metadata?.club || 'Non renseigné'}
+                  value={formData.metadata?.club || 'PaieCashPlay Club'}
+                  disabled
+                  className="input-field bg-gray-50"
+                />
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Pays
+              </label>
+              {editing ? (
+                <CountrySelect
+                  value={formData.country}
+                  onChange={(country) => setFormData({ ...formData, country })}
+                  placeholder="Sélectionnez votre pays"
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={formData.country || 'Non renseigné'}
                   disabled
                   className="input-field bg-gray-50"
                 />

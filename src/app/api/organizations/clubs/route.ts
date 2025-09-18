@@ -4,30 +4,34 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     const clubs = await prisma.user.findMany({
-      where: { 
+      where: {
         userType: 'club',
-        isActive: true 
+        isActive: true,
+        isVerified: true
       },
       include: {
         profile: {
           select: {
+            firstName: true,
+            lastName: true,
             metadata: true
           }
         }
+      },
+      orderBy: {
+        createdAt: 'asc'
       }
     });
 
-    const clubList = clubs
-      .filter(club => club.profile?.metadata && typeof club.profile.metadata === 'object' && 'organizationName' in club.profile.metadata)
-      .map(club => ({
-        id: club.id,
-        name: (club.profile?.metadata as any)?.organizationName
-      }))
-      .filter(club => club.name);
+    const formattedClubs = clubs.map(club => ({
+      id: club.id,
+      name: club.profile?.metadata?.organizationName || `${club.profile?.firstName} ${club.profile?.lastName}`,
+      country: club.profile?.metadata?.country || 'FR'
+    }));
 
-    return NextResponse.json({ clubs: clubList });
+    return NextResponse.json({ clubs: formattedClubs });
   } catch (error) {
     console.error('Error fetching clubs:', error);
-    return NextResponse.json({ clubs: [] });
+    return NextResponse.json({ error: 'Failed to fetch clubs' }, { status: 500 });
   }
 }

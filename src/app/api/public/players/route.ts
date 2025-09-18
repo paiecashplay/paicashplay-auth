@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCountryVariants } from '@/lib/utils';
+import { FederationService } from '@/lib/federations';
 
 // OPTIONS /api/public/players - CORS preflight
 export async function OPTIONS() {
@@ -9,7 +10,7 @@ export async function OPTIONS() {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
 }
@@ -43,11 +44,50 @@ export async function GET(request: NextRequest) {
 
 
 
-    // Récupérer tous les joueurs
+    // Récupérer tous les joueurs avec les informations des clubs
     const allPlayers = await prisma.user.findMany({
       where,
       include: { profile: true },
       orderBy: { createdAt: 'desc' }
+    });
+
+    // Récupérer les informations des clubs pour enrichir les données
+    const clubNames = new Set<string>();
+    allPlayers.forEach(player => {
+      const clubName = (player.profile?.metadata as any)?.club;
+      if (clubName) {
+        clubNames.add(clubName);
+      } else {
+        // Ajouter le club par défaut pour les joueurs sans club
+        clubNames.add('PaieCashPlay Club');
+      }
+    });
+
+    const clubsInfo = await prisma.user.findMany({
+      where: {
+        userType: 'club'
+      },
+      include: { profile: true }
+    });
+
+    const clubsMap = new Map();
+    clubsInfo.forEach(club => {
+      const orgName = (club.profile?.metadata as any)?.organizationName;
+      if (orgName && clubNames.has(orgName)) {
+        const clubCountry = club.profile?.country;
+        const federation = FederationService.getFederationByCountry(clubCountry || '');
+        
+        clubsMap.set(orgName, {
+          id: club.id,
+          name: orgName,
+          country: clubCountry,
+          federation: federation?.name || (club.profile?.metadata as any)?.federation,
+          email: club.email,
+          phone: club.profile?.phone,
+          isVerified: club.isVerified,
+          createdAt: club.createdAt
+        });
+      }
     });
 
     // Appliquer les filtres
@@ -74,10 +114,16 @@ export async function GET(request: NextRequest) {
         const metadata = player.profile?.metadata as any;
         const playerCountry = player.profile?.country;
         const clubId = metadata?.clubId;
+        const clubName = metadata?.club;
 
         if (clubId) {
           return clubIdsInCountry.includes(clubId);
+        } else if (clubName && clubName !== 'PaieCashPlay Club') {
+          // Si le joueur a un club spécifique, vérifier le pays du club
+          return false; // Pour l'instant, on ne peut pas déterminer le pays
         } else {
+          // Pour les joueurs sans club (PaieCashPlay Club) ou avec club par défaut,
+          // utiliser le pays du joueur
           return countryVariants.includes(playerCountry || '');
         }
       });
@@ -112,17 +158,59 @@ export async function GET(request: NextRequest) {
         // Informations spécifiques au joueur
         position: (player.profile?.metadata as any)?.position,
         dateOfBirth: (player.profile?.metadata as any)?.dateOfBirth,
-        club: (player.profile?.metadata as any)?.clubId ? {
-          id: (player.profile?.metadata as any)?.clubId,
-          name: (player.profile?.metadata as any)?.organizationName || 
-                (player.profile?.metadata as any)?.clubName || 
-                (player.profile?.metadata as any)?.club || 
-                'Club non spécifié'
-        } : null,
+        age: (player.profile?.metadata as any)?.dateOfBirth ? (() => {
+          const birthDate = new Date((player.profile?.metadata as any).dateOfBirth);
+          const today = new Date();
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+          return age;
+        })() : null,
+        preferredFoot: (player.profile?.metadata as any)?.preferredFoot,
+        jerseyNumber: (player.profile?.metadata as any)?.jerseyNumber,
+        nationality: (player.profile?.metadata as any)?.nationality,
+        placeOfBirth: (player.profile?.metadata as any)?.placeOfBirth,
+        experience: (player.profile?.metadata as any)?.experience,
+        previousClubs: (player.profile?.metadata as any)?.previousClubs || [],
+        achievements: (player.profile?.metadata as any)?.achievements || [],
+        club: (() => {
+          const clubName = (player.profile?.metadata as any)?.club;
+          if (clubName && clubName !== 'Club non renseigné' && clubsMap.has(clubName)) {
+            return clubsMap.get(clubName);
+          } else if (clubName && clubName !== 'Club non renseigné' && clubName !== 'PaieCashPlay Club') {
+            // Pour les clubs non référencés, utiliser le pays du joueur pour déterminer la fédération
+            const playerCountry = player.profile?.country;
+            const federation = FederationService.getFederationByCountry(playerCountry || '');
+            
+            return {
+              id: null,
+              name: clubName,
+              country: playerCountry,
+              federation: federation?.name || null,
+              email: null,
+              phone: null,
+              isVerified: false,
+              createdAt: null
+            };
+          }
+          // Club par défaut pour les joueurs sans club ou avec "Club non renseigné"
+          return {
+            id: 'default',
+            name: 'PaieCashPlay Club',
+            country: null,
+            federation: 'PaieCashPlay Foundation',
+            email: 'club@paiecashplay.com',
+            phone: null,
+            isVerified: true,
+            createdAt: null
+          };
+        })(),
         status: (player.profile?.metadata as any)?.status || 'active',
-        // Toutes les métadonnées
+        // Métadonnées complètes
         metadata: player.profile?.metadata
-      })),
+      })).filter(player => player !== null),
       pagination: {
         page,
         limit,
@@ -134,7 +222,7 @@ export async function GET(request: NextRequest) {
     // Add CORS headers
     response.headers.set('Access-Control-Allow-Origin', '*');
     response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     
     return response;
 

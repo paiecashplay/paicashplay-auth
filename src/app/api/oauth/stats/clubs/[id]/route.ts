@@ -33,7 +33,7 @@ export const GET = requireOAuthScope(['clubs:read'])(async (
         userType: 'player',
         profile: {
           metadata: {
-            path: ['clubId'],
+            path: 'clubId',
             equals: params.id
           }
         }

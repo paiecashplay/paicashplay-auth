@@ -23,11 +23,14 @@ export async function GET() {
       }
     });
 
-    const formattedClubs = clubs.map(club => ({
-      id: club.id,
-      name: club.profile?.metadata?.organizationName || `${club.profile?.firstName} ${club.profile?.lastName}`,
-      country: club.profile?.metadata?.country || 'FR'
-    }));
+    const formattedClubs = clubs.map(club => {
+      const metadata = club.profile?.metadata as any;
+      return {
+        id: club.id,
+        name: metadata?.organizationName || `${club.profile?.firstName} ${club.profile?.lastName}`,
+        country: metadata?.country || 'FR'
+      };
+    });
 
     return NextResponse.json({ clubs: formattedClubs });
   } catch (error) {

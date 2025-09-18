@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCountryVariants } from '@/lib/utils';
 
 // OPTIONS /api/public/clubs - CORS preflight
 export async function OPTIONS() {
@@ -8,7 +9,7 @@ export async function OPTIONS() {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
 }
@@ -18,57 +19,82 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const country = searchParams.get('country');
-    const league = searchParams.get('league');
+    const federation = searchParams.get('federation');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
 
-    const where: any = { userType: 'club' };
-    const filters: any[] = [];
+    const where: any = { 
+      userType: 'club',
+      isActive: true,
+      isVerified: true
+    };
 
+    // Filtrer par pays si spécifié
     if (country) {
-      where.profile = { country };
-    }
-
-    if (league) {
-      filters.push({
-        profile: {
-          metadata: {
-            path: ['league'],
-            equals: league
-          }
+      const countryVariants = getCountryVariants(country);
+      where.profile = {
+        country: {
+          in: countryVariants
         }
-      });
+      };
     }
 
-    if (filters.length > 0) {
-      where.AND = filters;
-    }
-
-    const clubs = await prisma.user.findMany({
+    // Récupérer tous les clubs
+    const allClubs = await prisma.user.findMany({
       where,
       include: { profile: true },
-      skip: (page - 1) * limit,
-      take: limit,
       orderBy: { createdAt: 'desc' }
     });
 
-    const total = await prisma.user.count({ where });
+    // Filtrer par fédération si spécifié
+    let filteredClubs = allClubs;
+    if (federation) {
+      filteredClubs = allClubs.filter(club => {
+        const metadata = club.profile?.metadata as any;
+        return metadata?.federation?.toLowerCase().includes(federation.toLowerCase());
+      });
+    }
+
+    const total = filteredClubs.length;
+    const clubs = filteredClubs.slice((page - 1) * limit, page * limit);
 
     const response = NextResponse.json({
-      clubs: clubs.map(club => ({
-        id: club.id,
-        name: club.profile?.firstName || club.email,
-        country: club.profile?.country,
-        phone: club.profile?.phone,
-        isVerified: club.isVerified,
-        createdAt: club.createdAt,
-        metadata: {
-          league: (club.profile?.metadata as any)?.league,
-          founded: (club.profile?.metadata as any)?.founded,
-          stadium: (club.profile?.metadata as any)?.stadium,
-          website: (club.profile?.metadata as any)?.website
-        }
-      })),
+      clubs: clubs.map(club => {
+        const metadata = club.profile?.metadata as any;
+        return {
+          id: club.id,
+          name: metadata?.organizationName,
+          email: club.email,
+          phone: club.profile?.phone,
+          country: club.profile?.country,
+          language: club.profile?.language,
+          avatarUrl: club.profile?.avatarUrl,
+          isVerified: club.isVerified,
+          isActive: club.isActive,
+          createdAt: club.createdAt,
+          updatedAt: club.updatedAt,
+          
+          // Métadonnées du club
+          federation: metadata?.federation,
+          website: metadata?.website,
+          address: metadata?.address,
+          foundedYear: metadata?.foundedYear,
+          description: metadata?.description,
+          clubType: metadata?.clubType,
+          facilities: metadata?.facilities || [],
+          achievements: metadata?.achievements || [],
+          
+          // Statistiques
+          playerCount: metadata?.playerCount || 0,
+          coachCount: metadata?.coachCount || 0,
+          
+          // Contact
+          socialMedia: metadata?.socialMedia,
+          
+          // Métadonnées complètes pour OAuth
+          metadata: metadata
+        };
+      }),
       pagination: {
         page,
         limit,
@@ -77,9 +103,10 @@ export async function GET(request: NextRequest) {
       }
     });
     
+    // Add CORS headers
     response.headers.set('Access-Control-Allow-Origin', '*');
     response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     
     return response;
 

@@ -50,8 +50,9 @@ export class AuthService {
           include: { profile: true }
         });
         
-        if (defaultClub?.profile?.metadata?.organizationName) {
-          finalMetadata.club = defaultClub.profile.metadata.organizationName;
+        const clubMetadata = defaultClub?.profile?.metadata as any;
+        if (clubMetadata?.organizationName) {
+          finalMetadata.club = clubMetadata.organizationName;
         } else {
           finalMetadata.club = 'PaieCashPlay Club';
         }

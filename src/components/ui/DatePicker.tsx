@@ -104,9 +104,10 @@ export default function DatePicker({
         new Date().getMonth() === currentMonth && 
         new Date().getFullYear() === currentYear;
       
-      const isDisabled = 
+      const isDisabled = Boolean(
         (minDate && dayIsoString < minDate) || 
-        (maxDate && dayIsoString > maxDate);
+        (maxDate && dayIsoString > maxDate)
+      );
 
       days.push(
         <button
@@ -228,7 +229,7 @@ export default function DatePicker({
                 }}
                 disabled={(() => {
                   const today = new Date().toISOString().split('T')[0];
-                  return (minDate && today < minDate) || (maxDate && today > maxDate);
+                  return Boolean((minDate && today < minDate) || (maxDate && today > maxDate));
                 })()}
                 className="text-sm font-semibold px-3 py-1 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
               >

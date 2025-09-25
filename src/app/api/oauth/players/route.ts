@@ -26,46 +26,49 @@ export const GET = requireOAuthScope(['players:read'])(async (request: NextReque
     if (position) metadataFilters.position = position;
     if (status) metadataFilters.status = status;
     
-    if (Object.keys(metadataFilters).length > 0) {
-      where.profile.metadata = {
-        path: Object.keys(metadataFilters),
-        array_contains: Object.values(metadataFilters)
-      };
-    }
+    // Pour les filtres metadata, nous devons utiliser une approche différente
+    // car Prisma ne supporte pas bien les requêtes JSON complexes
+    // Nous allons filtrer côté application pour l'instant
     
-    // Filtre par âge (approximatif basé sur birthDate)
-    if (ageMin || ageMax) {
-      const currentYear = new Date().getFullYear();
-      if (ageMin) {
-        const maxBirthYear = currentYear - parseInt(ageMin);
-        where.profile.metadata = {
-          ...where.profile.metadata,
-          path: ['birthDate'],
-          lte: `${maxBirthYear}-12-31`
-        };
-      }
-      if (ageMax) {
-        const minBirthYear = currentYear - parseInt(ageMax);
-        where.profile.metadata = {
-          ...where.profile.metadata,
-          path: ['birthDate'],
-          gte: `${minBirthYear}-01-01`
-        };
-      }
-    }
+    // Les filtres par âge seront appliqués côté application
   }
 
-  const players = await prisma.user.findMany({
-    where,
+  // Récupérer tous les joueurs puis filtrer côté application
+  let allPlayers = await prisma.user.findMany({
+    where: { userType: 'player' },
     include: {
       profile: true
     },
-    skip: (page - 1) * limit,
-    take: limit,
     orderBy: { createdAt: 'desc' }
   });
 
-  const total = await prisma.user.count({ where });
+  // Filtrer côté application
+  if (country || clubId || position || status || ageMin || ageMax) {
+    allPlayers = allPlayers.filter(player => {
+      if (country && player.profile?.country !== country) return false;
+      
+      const metadata = player.profile?.metadata as any;
+      if (clubId && metadata?.clubId !== clubId) return false;
+      if (position && metadata?.position !== position) return false;
+      if (status && metadata?.status !== status) return false;
+      
+      // Filtre par âge
+      if (ageMin || ageMax) {
+        const birthDate = metadata?.birthDate;
+        if (birthDate) {
+          const birthYear = new Date(birthDate).getFullYear();
+          const age = new Date().getFullYear() - birthYear;
+          if (ageMin && age < parseInt(ageMin)) return false;
+          if (ageMax && age > parseInt(ageMax)) return false;
+        }
+      }
+      
+      return true;
+    });
+  }
+
+  const total = allPlayers.length;
+  const players = allPlayers.slice((page - 1) * limit, page * limit);
 
   return NextResponse.json({
     players: players.map(player => ({

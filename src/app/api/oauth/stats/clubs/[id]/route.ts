@@ -27,18 +27,15 @@ export const GET = requireOAuthScope(['clubs:read'])(async (
       return NextResponse.json({ error: 'Club not found' }, { status: 404 });
     }
 
-    // Récupérer les membres du club avec Prisma
-    const members = await prisma.user.findMany({
-      where: {
-        userType: 'player',
-        profile: {
-          metadata: {
-            path: 'clubId',
-            equals: params.id
-          }
-        }
-      },
+    // Récupérer tous les joueurs et filtrer par club
+    const allPlayers = await prisma.user.findMany({
+      where: { userType: 'player' },
       include: { profile: true }
+    });
+    
+    const members = allPlayers.filter(player => {
+      const metadata = player.profile?.metadata as any;
+      return metadata?.clubId === params.id;
     });
 
     // Calculer les statistiques

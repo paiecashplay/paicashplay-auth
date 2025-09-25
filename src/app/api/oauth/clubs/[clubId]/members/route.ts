@@ -33,91 +33,35 @@ export const GET = requireOAuthScope(['clubs:members'])(async (
       return NextResponse.json({ error: 'Club not found' }, { status: 404 });
     }
 
-    // Find players associated with this club using MySQL JSON syntax
-    let members = await prisma.user.findMany({
+    // Find players associated with this club
+    let allPlayers = await prisma.user.findMany({
       where: {
-        userType: 'player',
-        profile: {
-          metadata: {
-            path: 'clubId',
-            equals: params.clubId
-          }
-        }
+        userType: 'player'
       },
       include: { profile: true }
     });
+    
+    // Filter by clubId in metadata
+    let members = allPlayers.filter(player => {
+      const metadata = player.profile?.metadata as any;
+      return metadata?.clubId === params.clubId;
+    });
 
-    // Apply additional filters with Prisma
+    // Apply additional filters
     if (position || status) {
-      const additionalFilters: any = {
-        userType: 'player',
-        profile: {
-          metadata: {
-            path: ['clubId'],
-            equals: params.clubId
-          }
-        }
-      };
-      
-      if (position) {
-        additionalFilters.AND = additionalFilters.AND || [];
-        additionalFilters.AND.push({
-          profile: {
-            metadata: {
-              path: 'position',
-              equals: position
-            }
-          }
-        });
-      }
-      
-      if (status) {
-        additionalFilters.AND = additionalFilters.AND || [];
-        additionalFilters.AND.push({
-          profile: {
-            metadata: {
-              path: 'status',
-              equals: status
-            }
-          }
-        });
-      }
-      
-      members = await prisma.user.findMany({
-        where: additionalFilters,
-        include: { profile: true }
+      members = members.filter(member => {
+        const metadata = member.profile?.metadata as any;
+        if (position && metadata?.position !== position) return false;
+        if (status && metadata?.status !== status) return false;
+        return true;
       });
     }
 
-    // Get total count
-    const total = await prisma.user.count({
-      where: {
-        userType: 'player',
-        profile: {
-          metadata: {
-            path: 'clubId',
-            equals: params.clubId
-          }
-        }
-      }
-    });
-    
-    // Apply pagination with Prisma
-    const paginatedMembers = await prisma.user.findMany({
-      where: {
-        userType: 'player',
-        profile: {
-          metadata: {
-            path: 'clubId',
-            equals: params.clubId
-          }
-        }
-      },
-      include: { profile: true },
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: 'desc' }
-    });
+    // Get total count and apply pagination
+    const total = members.length;
+    const paginatedMembers = members
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice((page - 1) * limit, page * limit);
 
     return NextResponse.json({
       club: {

@@ -52,30 +52,27 @@ export async function GET(
         }
       });
 
-      // Compter les membres de chaque club
-      const clubsWithMemberCount = await Promise.all(
-        clubs.map(async (club) => {
-          const memberCount = await prisma.user.count({
-            where: {
-              userType: 'player',
-              profile: {
-                metadata: {
-                  path: 'clubId',
-                  equals: club.id
-                }
-              }
-            }
-          });
+      // Récupérer tous les joueurs pour compter les membres
+      const allPlayers = await prisma.user.findMany({
+        where: { userType: 'player' },
+        include: { profile: true }
+      });
 
-          return {
-            id: club.id,
-            name: club.profile?.firstName || club.email,
-            league: (club.profile?.metadata as any)?.league,
-            city: (club.profile?.metadata as any)?.city,
-            membersCount: memberCount
-          };
-        })
-      );
+      // Compter les membres de chaque club
+      const clubsWithMemberCount = clubs.map((club) => {
+        const memberCount = allPlayers.filter(player => {
+          const metadata = player.profile?.metadata as any;
+          return metadata?.clubId === club.id;
+        }).length;
+
+        return {
+          id: club.id,
+          name: club.profile?.firstName || club.email,
+          league: (club.profile?.metadata as any)?.league,
+          city: (club.profile?.metadata as any)?.city,
+          membersCount: memberCount
+        };
+      });
 
       return NextResponse.json({
         federation: {

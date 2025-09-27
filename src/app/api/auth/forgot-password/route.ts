@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { EmailService } from '@/lib/email-service';
 import { generateSecureToken } from '@/lib/password';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,11 +46,16 @@ export async function POST(request: NextRequest) {
       }
     });
     
+    // Récupérer le token OAuth de session s'il existe
+    const cookieStore = await cookies();
+    const oauthSession = cookieStore.get('oauth_session')?.value;
+    
     // Send reset email
     await EmailService.sendPasswordResetEmail(
       user.email,
       user.profile?.firstName || 'Utilisateur',
-      resetToken
+      resetToken,
+      oauthSession
     );
     
     return NextResponse.json({

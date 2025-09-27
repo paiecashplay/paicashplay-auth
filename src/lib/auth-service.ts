@@ -91,7 +91,7 @@ export class AuthService {
       });
 
       // Si le club n'existe pas, le créer automatiquement
-      if (!existingClub) {
+      if (!existingClub && country) {
         try {
           await createClubForPlayer(finalMetadata.club, country, finalMetadata.federation);
           console.log(`✅ Club created for player: ${finalMetadata.club}`);

@@ -52,12 +52,18 @@ export class EmailService {
     });
   }
   
-  static async sendPasswordResetEmail(email: string, firstName: string, token: string) {
-    const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
+  static async sendPasswordResetEmail(email: string, firstName: string, token: string, oauthSession?: string) {
+    const resetUrl = new URL(`${process.env.NEXTAUTH_URL}/reset-password`);
+    resetUrl.searchParams.set('token', token);
+    
+    // Ajouter oauth_session si présent
+    if (oauthSession) {
+      resetUrl.searchParams.set('oauth_session', oauthSession);
+    }
     
     const html = await EmailTemplateService.getPasswordResetEmail({
       firstName,
-      resetUrl
+      resetUrl: resetUrl.toString()
     });
     
     const transporter = await this.getTransporter();

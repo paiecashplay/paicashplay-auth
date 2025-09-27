@@ -66,8 +66,19 @@ function ResetPasswordContent() {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success('Mot de passe modifié !', 'Vous pouvez maintenant vous connecter avec votre nouveau mot de passe');
-        setTimeout(() => router.push('/login?reset=success'), 2000);
+        toast.success('Mot de passe modifié !', 'Vous êtes maintenant connecté avec votre nouveau mot de passe');
+        
+        // Vérifier s'il y a un token OAuth à conserver
+        const urlParams = new URLSearchParams(window.location.search);
+        const oauthSession = urlParams.get('oauth_session');
+        
+        if (oauthSession) {
+          // Rediriger vers la page de continuation OAuth
+          setTimeout(() => router.push(`/api/auth/continue?oauth_session=${oauthSession}`), 2000);
+        } else {
+          // Rediriger vers le dashboard
+          setTimeout(() => router.push('/dashboard'), 2000);
+        }
       } else {
         toast.error('Erreur', data.error || 'Impossible de modifier le mot de passe');
       }

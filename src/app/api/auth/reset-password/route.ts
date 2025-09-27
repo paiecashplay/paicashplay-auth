@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { hashPassword } from '@/lib/password';
+import { hashPassword, generateSecureToken } from '@/lib/password';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,6 +53,30 @@ export async function POST(request: NextRequest) {
     await prisma.passwordReset.update({
       where: { id: resetToken.id },
       data: { used: true }
+    });
+    
+    // Créer une session pour l'utilisateur
+    const sessionToken = generateSecureToken();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    
+    await prisma.userSession.create({
+      data: {
+        userId: resetToken.userId,
+        sessionToken,
+        expiresAt,
+        ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown'
+      }
+    });
+    
+    // Définir le cookie de session
+    const cookieStore = await cookies();
+    cookieStore.set('session-token', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 // 7 jours
     });
     
     return NextResponse.json({

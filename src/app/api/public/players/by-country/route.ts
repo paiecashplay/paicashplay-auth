@@ -47,30 +47,42 @@ export async function GET(request: NextRequest) {
     const clubsInCountry = await prisma.user.findMany({
       where: {
         userType: 'club',
+        isActive: true,
         profile: {
           country: {
             in: countryVariants
           }
         }
       },
-      select: {
-        id: true
+      include: {
+        profile: {
+          select: {
+            country: true,
+            metadata: true
+          }
+        }
       }
     });
 
-    const clubIdsInCountry = clubsInCountry.map(club => club.id);
+    // Créer un Set des noms de clubs dans le pays
+    const clubNamesInCountry = new Set<string>();
+    clubsInCountry.forEach(club => {
+      const metadata = club.profile?.metadata as any;
+      const organizationName = metadata?.organizationName;
+      if (organizationName) {
+        clubNamesInCountry.add(organizationName);
+      }
+    });
 
     // Filtrer les joueurs selon la logique demandée
     const filteredPlayers = allPlayers.filter(player => {
       const metadata = player.profile?.metadata as any;
       const playerCountry = player.profile?.country;
-      const clubId = metadata?.clubId;
+      const clubName = metadata?.club;
 
-
-      if (clubId) {
+      if (clubName && typeof clubName === 'string' && clubName.trim() !== '') {
         // Si le joueur appartient à un club, vérifier que le club est dans le pays
-        const isInCountryClub = clubIdsInCountry.includes(clubId);
-        return isInCountryClub;
+        return clubNamesInCountry.has(clubName);
       } else {
         // Si le joueur n'appartient pas à un club, vérifier son pays d'origine
         return countryVariants.includes(playerCountry || '');
@@ -81,35 +93,43 @@ export async function GET(request: NextRequest) {
     const players = filteredPlayers.slice(offset, offset + Math.min(limit, 100));
 
     const total = filteredPlayers.length;
-    // Créer un mapping club -> pays pour l'affichage
-    const clubCountryMap = new Map();
-    const allClubs = await prisma.user.findMany({
-      where: {
-        userType: 'club',
-        id: { in: players.map(p => (p.profile?.metadata as any)?.clubId).filter(Boolean) }
-      },
-      include: {
-        profile: {
-          select: {
-            country: true
+    
+    // Créer un mapping nom du club -> pays pour l'affichage
+    const clubCountryMap = new Map<string, string>();
+    const uniqueClubNames = [...new Set(players.map(p => (p.profile?.metadata as any)?.club).filter(Boolean))];
+    
+    if (uniqueClubNames.length > 0) {
+      const clubsForMapping = await prisma.user.findMany({
+        where: {
+          userType: 'club',
+          isActive: true
+        },
+        include: {
+          profile: {
+            select: {
+              country: true,
+              metadata: true
+            }
           }
         }
-      }
-    });
-    
-    allClubs.forEach(club => {
-      if (club.profile?.country) {
-        clubCountryMap.set(club.id, club.profile.country);
-      }
-    });
+      });
+      
+      clubsForMapping.forEach(club => {
+        const metadata = club.profile?.metadata as any;
+        const organizationName = metadata?.organizationName;
+        if (organizationName && uniqueClubNames.includes(organizationName) && club.profile?.country) {
+          clubCountryMap.set(organizationName, club.profile.country);
+        }
+      });
+    }
 
     const formattedPlayers = players.map(player => {
       const metadata = player.profile?.metadata as any;
-      const clubId = metadata?.clubId;
+      const clubName = metadata?.club;
       
       // Déterminer le pays effectif
-      const effectiveCountry = clubId && clubCountryMap.has(clubId) 
-        ? clubCountryMap.get(clubId) 
+      const effectiveCountry = clubName && clubCountryMap.has(clubName) 
+        ? clubCountryMap.get(clubName) 
         : player.profile?.country;
       
       return {
@@ -130,9 +150,9 @@ export async function GET(request: NextRequest) {
         // Informations spécifiques au joueur
         position: metadata?.position,
         dateOfBirth: metadata?.dateOfBirth,
-        club: clubId ? {
-          id: clubId,
-          name: metadata?.clubName || 'Club non spécifié'
+        club: clubName ? {
+          name: clubName,
+          country: clubCountryMap.get(clubName) || null
         } : null,
         status: metadata?.status || 'active',
         // Toutes les métadonnées

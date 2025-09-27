@@ -20,25 +20,29 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Récupérer tous les clubs avec leur pays
+    // Récupérer tous les clubs avec leur pays et nom d'organisation
     const allClubs = await prisma.user.findMany({
       where: {
-        userType: 'club'
+        userType: 'club',
+        isActive: true
       },
       include: {
         profile: {
           select: {
-            country: true
+            country: true,
+            metadata: true
           }
         }
       }
     });
 
-    // Créer un mapping club -> pays
-    const clubCountryMap = new Map();
+    // Créer un mapping nom du club -> pays
+    const clubCountryMap = new Map<string, string>();
     allClubs.forEach(club => {
-      if (club.profile?.country) {
-        clubCountryMap.set(club.id, club.profile.country);
+      const metadata = club.profile?.metadata as any;
+      const organizationName = metadata?.organizationName;
+      if (organizationName && club.profile?.country) {
+        clubCountryMap.set(organizationName, club.profile.country);
       }
     });
 
@@ -48,11 +52,11 @@ export async function GET(request: NextRequest) {
     allPlayers.forEach(player => {
       const metadata = player.profile?.metadata as any;
       const playerCountry = player.profile?.country;
-      const clubId = metadata?.clubId;
+      const clubName = metadata?.club;
 
-      if (clubId && clubCountryMap.has(clubId)) {
+      if (clubName && typeof clubName === 'string' && clubName.trim() !== '' && clubCountryMap.has(clubName)) {
         // Si le joueur appartient à un club, utiliser le pays du club
-        countriesSet.add(clubCountryMap.get(clubId));
+        countriesSet.add(clubCountryMap.get(clubName)!);
       } else if (playerCountry) {
         // Si le joueur n'appartient pas à un club, utiliser son pays d'origine
         countriesSet.add(playerCountry);

@@ -31,7 +31,21 @@ const COUNTRY_MAPPING: { [key: string]: string[] } = {
   'TN': ['Tunisie', 'Tunisia', 'TN']
 };
 
-export function getCountryVariants(countryCode: string): string[] {
-  const upperCode = countryCode.toUpperCase();
-  return COUNTRY_MAPPING[upperCode] || [upperCode];
+export function getCountryVariants(country: string): string[] {
+  const upperCountry = country.toUpperCase();
+  
+  // Si c'est un code pays, retourner les variantes
+  if (COUNTRY_MAPPING[upperCountry]) {
+    return COUNTRY_MAPPING[upperCountry];
+  }
+  
+  // Si c'est un nom complet, chercher dans les valeurs
+  for (const [code, variants] of Object.entries(COUNTRY_MAPPING)) {
+    if (variants.some(variant => variant.toUpperCase() === upperCountry)) {
+      return variants;
+    }
+  }
+  
+  // Si aucune correspondance, retourner le pays tel quel
+  return [country];
 }

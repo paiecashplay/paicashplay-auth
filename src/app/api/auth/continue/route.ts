@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
 import { createRedirectUrl } from '@/lib/url-utils';
 
 export async function GET(request: NextRequest) {
@@ -34,13 +33,18 @@ export async function GET(request: NextRequest) {
   }
   
   // Validate session and get user
-  let userId: string;
-  try {
-    const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET!) as any;
-    userId = decoded.userId;
-  } catch (error) {
+  const session = await prisma.userSession.findFirst({
+    where: {
+      sessionToken,
+      expiresAt: { gt: new Date() }
+    }
+  });
+  
+  if (!session) {
     return NextResponse.redirect(createRedirectUrl(`/login?oauth_session=${oauthSessionId}`));
   }
+  
+  const userId = session.userId;
   
   // Generate authorization code
   const { generateSecureToken } = require('@/lib/password');

@@ -130,7 +130,7 @@ export default function SignupPage() {
         } else if (formData.userType === 'player') {
           metadata.position = formData.position;
           metadata.dateOfBirth = formData.dateOfBirth;
-          metadata.club = formData.clubName;
+          metadata.club = formData.clubName && formData.clubName.trim() !== '' ? formData.clubName : null;
         } else if (formData.userType === 'affiliate') {
           metadata.activityType = formData.position;
           metadata.platform = formData.organizationName;
@@ -234,7 +234,7 @@ export default function SignupPage() {
       } else if (formData.userType === 'player') {
         metadata.position = formData.position;
         metadata.dateOfBirth = formData.dateOfBirth;
-        metadata.club = formData.clubName;
+        metadata.club = formData.clubName && formData.clubName.trim() !== '' ? formData.clubName : null;
       } else if (formData.userType === 'affiliate') {
         metadata.activityType = formData.position;
         metadata.platform = formData.organizationName;

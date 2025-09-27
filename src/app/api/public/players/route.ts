@@ -99,30 +99,42 @@ export async function GET(request: NextRequest) {
       const clubsInCountry = await prisma.user.findMany({
         where: {
           userType: 'club',
+          isActive: true,
           profile: {
             country: {
               in: countryVariants
             }
           }
         },
-        select: { id: true }
+        include: {
+          profile: {
+            select: {
+              metadata: true
+            }
+          }
+        }
       });
 
-      const clubIdsInCountry = clubsInCountry.map(club => club.id);
+      // Créer un Set des noms de clubs dans le pays
+      const clubNamesInCountry = new Set<string>();
+      clubsInCountry.forEach(club => {
+        const metadata = club.profile?.metadata as any;
+        const organizationName = metadata?.organizationName;
+        if (organizationName) {
+          clubNamesInCountry.add(organizationName);
+        }
+      });
 
       filteredPlayers = allPlayers.filter(player => {
         const metadata = player.profile?.metadata as any;
         const playerCountry = player.profile?.country;
-        const clubId = metadata?.clubId;
         const clubName = metadata?.club;
 
-        if (clubId) {
-          return clubIdsInCountry.includes(clubId);
-        } else if (clubName && clubName !== 'PaieCashPlay Club') {
-          // Si le joueur a un club spécifique, vérifier le pays du club
-          return false; // Pour l'instant, on ne peut pas déterminer le pays
+        if (clubName && typeof clubName === 'string' && clubName.trim() !== '' && clubName !== 'PaieCashPlay Club') {
+          // Si le joueur a un club spécifique, vérifier que le club est dans le pays
+          return clubNamesInCountry.has(clubName);
         } else {
-          // Pour les joueurs sans club (PaieCashPlay Club) ou avec club par défaut,
+          // Pour les joueurs sans club ou avec club par défaut,
           // utiliser le pays du joueur
           return countryVariants.includes(playerCountry || '');
         }

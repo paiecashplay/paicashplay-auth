@@ -89,7 +89,8 @@ export class AdminService {
         first_name: user.profile?.firstName,
         last_name: user.profile?.lastName,
         phone: user.profile?.phone,
-        country: user.profile?.country
+        country: user.profile?.country,
+        metadata: user.profile?.metadata ? JSON.parse(JSON.stringify(user.profile.metadata)) : null
       })),
       pagination: {
         page,
@@ -183,13 +184,20 @@ export class AdminService {
     });
 
     return {
-      recentUsers: recentUsers.map(user => ({
-        id: user.id,
-        email: user.email,
-        userType: user.userType,
-        name: user.profile ? `${user.profile.firstName} ${user.profile.lastName}` : null,
-        createdAt: user.createdAt
-      })),
+      recentUsers: recentUsers.map(user => {
+        const metadata = user.profile?.metadata as any;
+        const organizationName = metadata?.organizationName;
+        const displayName = organizationName || 
+          (user.profile ? `${user.profile.firstName} ${user.profile.lastName}` : null);
+        
+        return {
+          id: user.id,
+          email: user.email,
+          userType: user.userType,
+          name: displayName,
+          createdAt: user.createdAt
+        };
+      }),
       recentSessions: []
     };
   }

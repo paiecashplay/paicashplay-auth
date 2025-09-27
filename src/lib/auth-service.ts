@@ -4,6 +4,34 @@ import { prisma } from './prisma';
 import { RateLimitService } from './rate-limit';
 import { AuditService } from './audit';
 
+// Fonction utilitaire pour créer un club automatiquement
+async function createClubForPlayer(clubName: string, country: string, federationName?: string) {
+  const clubEmail = `${clubName.toLowerCase().replace(/[^a-z0-9]/g, '')}.${country.toLowerCase().replace(/[^a-z0-9]/g, '')}@paiecashplay.com`;
+  const defaultPassword = await hashPassword('defaultclub123');
+
+  await prisma.user.create({
+    data: {
+      email: clubEmail,
+      passwordHash: defaultPassword,
+      userType: 'club',
+      isVerified: false,
+      profile: {
+        create: {
+          firstName: 'Club',
+          lastName: 'Administrateur',
+          country: country,
+          metadata: {
+            organizationName: clubName,
+            federation: federationName || null,
+            isAutoCreated: true,
+            createdByPlayer: true
+          }
+        }
+      }
+    }
+  });
+}
+
 
 export interface CreateUserData {
   email: string;
@@ -37,25 +65,56 @@ export class AuthService {
     // Hash password
     const passwordHash = await hashPassword(password);
     
-    // Pour les joueurs, gérer l'association au club par défaut
+    // Pour les joueurs, gérer l'association au club
     let finalMetadata = metadata || {};
-    if (userType === 'player') {
-      // Si aucun club n'est spécifié, associer au club par défaut
-      if (!finalMetadata.club) {
-        const defaultClub = await prisma.user.findFirst({
-          where: {
-            userType: 'club',
-            email: 'club@paiecashplay.com'
-          },
-          include: { profile: true }
-        });
-        
-        const clubMetadata = defaultClub?.profile?.metadata as any;
-        if (clubMetadata?.organizationName) {
-          finalMetadata.club = clubMetadata.organizationName;
-        } else {
-          finalMetadata.club = 'PaieCashPlay Club';
+    if (userType === 'player' && finalMetadata.club) {
+      // Vérifier si le club existe
+      const allClubs = await prisma.user.findMany({
+        where: {
+          userType: 'club',
+          isActive: true
+        },
+        include: {
+          profile: {
+            select: {
+              country: true,
+              metadata: true
+            }
+          }
         }
+      });
+      
+      const existingClub = allClubs.find(club => {
+        const metadata = club.profile?.metadata as any;
+        const clubName = metadata?.organizationName;
+        return clubName === finalMetadata.club && club.profile?.country === country;
+      });
+
+      // Si le club n'existe pas, le créer automatiquement
+      if (!existingClub) {
+        try {
+          await createClubForPlayer(finalMetadata.club, country, finalMetadata.federation);
+          console.log(`✅ Club created for player: ${finalMetadata.club}`);
+        } catch (error) {
+          console.error('Error creating club for player:', error);
+          // Continuer même si la création du club échoue
+        }
+      }
+    } else if (userType === 'player' && !finalMetadata.club) {
+      // Si aucun club n'est spécifié, associer au club par défaut
+      const defaultClub = await prisma.user.findFirst({
+        where: {
+          userType: 'club',
+          email: 'club@paiecashplay.com'
+        },
+        include: { profile: true }
+      });
+      
+      const clubMetadata = defaultClub?.profile?.metadata as any;
+      if (clubMetadata?.organizationName) {
+        finalMetadata.club = clubMetadata.organizationName;
+      } else {
+        finalMetadata.club = 'PaieCashPlay Club';
       }
     }
     

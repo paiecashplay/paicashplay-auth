@@ -518,6 +518,7 @@ export default function SignupPage() {
                           value={formData.clubName}
                           onChange={(club) => setFormData({ ...formData, clubName: club })}
                           placeholder="Sélectionnez votre club"
+                          country={formData.country}
                         />
                         <p className="text-xs text-gray-500 mt-1">
                           <i className="fas fa-info-circle mr-1"></i>
@@ -595,12 +596,19 @@ export default function SignupPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
-                        Fédération (optionnel)
+                        Fédération
+                        {formData.country && (
+                          <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                            <i className="fas fa-magic mr-1"></i>Auto
+                          </span>
+                        )}
                       </label>
                       <FederationSelect
                         value={formData.federationName}
                         onChange={(federation) => setFormData({ ...formData, federationName: federation })}
                         placeholder="Sélectionnez votre fédération"
+                        country={formData.country}
+                        autoSelect={!!formData.country}
                       />
                     </div>
                   </div>

@@ -14,6 +14,7 @@ interface User {
   last_name?: string;
   phone?: string;
   country?: string;
+  metadata?: any;
 }
 
 export default function UsersManager() {
@@ -136,10 +137,32 @@ export default function UsersManager() {
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
+  const getDisplayName = (user: User) => {
+    // Types de comptes organisationnels
+    const organizationalTypes = ['club', 'federation', 'company', 'academy', 'school', 'association'];
+    
+    if (organizationalTypes.includes(user.user_type)) {
+      // Pour les entités organisationnelles, utiliser organizationName
+      const organizationName = user.metadata?.organizationName;
+      if (organizationName) {
+        return organizationName;
+      }
+      // Fallback
+      return user.first_name && user.last_name 
+        ? `${user.first_name} ${user.last_name}` 
+        : 'Organisation non renseignée';
+    }
+    
+    // Pour les comptes personnels
+    return user.first_name && user.last_name 
+      ? `${user.first_name} ${user.last_name}` 
+      : 'Nom non renseigné';
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Gestion des Utilisateurs (v2.1)</h1>
         <div className="text-sm text-gray-600">
           Total : {pagination.total} utilisateurs
         </div>
@@ -212,12 +235,13 @@ export default function UsersManager() {
                   <td className="px-6 py-4">
                     <div>
                       <div className="font-medium text-gray-900">
-                        {user.first_name && user.last_name 
-                          ? `${user.first_name} ${user.last_name}`
-                          : 'Nom non renseigné'
-                        }
+                        {getDisplayName(user)}
                       </div>
                       <div className="text-sm text-gray-500">{user.email}</div>
+                      {/* Debug info */}
+                      <div className="text-xs text-red-500">
+                        Type: {user.user_type} | Org: {user.metadata?.organizationName || 'N/A'}
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">

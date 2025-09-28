@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     
     // Définir le cookie de session
     const cookieStore = await cookies();
-    cookieStore.set('session-token', sessionToken, {
+    cookieStore.set('session_token', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

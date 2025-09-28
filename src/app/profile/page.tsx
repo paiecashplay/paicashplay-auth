@@ -171,6 +171,15 @@ function ProfileContent() {
               <i className={`${getUserTypeIcon(user.userType)} mr-2`}></i>
               {user.userType}
             </span>
+            <a
+              href="https://fundation.paiecashplay.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary"
+            >
+              <i className="fas fa-home mr-2"></i>
+              Fondation
+            </a>
             <button
               onClick={() => router.push('/dashboard')}
               className="btn-secondary"

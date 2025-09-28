@@ -102,11 +102,12 @@ const fetchCountries = async (searchTerm?: string): Promise<Country[]> => {
 interface CountrySelectProps {
   value: string;
   onChange: (country: string) => void;
+  onCountryCodeChange?: (countryCode: string) => void; // Callback pour notifier le code pays
   placeholder?: string;
   className?: string;
 }
 
-export default function CountrySelect({ value, onChange, placeholder = "Sélectionnez un pays", className = '' }: CountrySelectProps) {
+export default function CountrySelect({ value, onChange, onCountryCodeChange, placeholder = "Sélectionnez un pays", className = '' }: CountrySelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [countries, setCountries] = useState<Country[]>(FALLBACK_COUNTRIES);
@@ -172,6 +173,10 @@ export default function CountrySelect({ value, onChange, placeholder = "Sélecti
     onChange(country.name);
     setIsOpen(false);
     setSearch('');
+    // Notifier le changement de code pays
+    if (onCountryCodeChange) {
+      onCountryCodeChange(country.code);
+    }
   };
 
   return (

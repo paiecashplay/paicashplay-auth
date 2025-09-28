@@ -42,6 +42,7 @@ export default function SignupPage() {
     dateOfBirth: '',
     phone: '',
     country: '',
+    countryCode: '', // Code pays pour synchronisation
     // Company specific
     companyName: '',
     siret: ''
@@ -479,6 +480,27 @@ export default function SignupPage() {
                           value={formData.phone}
                           onChange={(phone) => setFormData({ ...formData, phone })}
                           placeholder="1 23 45 67 89"
+                          selectedCountry={formData.countryCode}
+                          onCountryChange={(countryCode) => {
+                            // Synchroniser le pays si pas encore sélectionné
+                            if (!formData.country) {
+                              // Trouver le nom du pays à partir du code
+                              fetch(`/api/countries?code=${countryCode}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                  if (data.countries && data.countries.length > 0) {
+                                    setFormData(prev => ({ 
+                                      ...prev, 
+                                      country: data.countries[0].name,
+                                      countryCode 
+                                    }));
+                                  }
+                                })
+                                .catch(console.error);
+                            } else {
+                              setFormData(prev => ({ ...prev, countryCode }));
+                            }
+                          }}
                         />
                       </div>
                       <div>
@@ -488,6 +510,7 @@ export default function SignupPage() {
                         <CountrySelect
                           value={formData.country}
                           onChange={(country) => setFormData({ ...formData, country })}
+                          onCountryCodeChange={(countryCode) => setFormData(prev => ({ ...prev, countryCode }))}
                           placeholder="Sélectionnez votre pays"
                         />
                       </div>
@@ -581,6 +604,25 @@ export default function SignupPage() {
                         value={formData.phone}
                         onChange={(phone) => setFormData({ ...formData, phone })}
                         placeholder="1 23 45 67 89"
+                        selectedCountry={formData.countryCode}
+                        onCountryChange={(countryCode) => {
+                          if (!formData.country) {
+                            fetch(`/api/countries?code=${countryCode}`)
+                              .then(res => res.json())
+                              .then(data => {
+                                if (data.countries && data.countries.length > 0) {
+                                  setFormData(prev => ({ 
+                                    ...prev, 
+                                    country: data.countries[0].name,
+                                    countryCode 
+                                  }));
+                                }
+                              })
+                              .catch(console.error);
+                          } else {
+                            setFormData(prev => ({ ...prev, countryCode }));
+                          }
+                        }}
                         required
                       />
                     </div>
@@ -591,6 +633,7 @@ export default function SignupPage() {
                       <CountrySelect
                         value={formData.country}
                         onChange={(country) => setFormData({ ...formData, country })}
+                        onCountryCodeChange={(countryCode) => setFormData(prev => ({ ...prev, countryCode }))}
                         placeholder="Sélectionnez un pays"
                       />
                     </div>
@@ -679,6 +722,7 @@ export default function SignupPage() {
                         <CountrySelect
                           value={formData.country}
                           onChange={(country) => setFormData({ ...formData, country })}
+                          onCountryCodeChange={(countryCode) => setFormData(prev => ({ ...prev, countryCode }))}
                           placeholder="Sélectionnez un pays"
                         />
                       </div>
@@ -691,6 +735,25 @@ export default function SignupPage() {
                         value={formData.phone}
                         onChange={(phone) => setFormData({ ...formData, phone })}
                         placeholder="1 23 45 67 89"
+                        selectedCountry={formData.countryCode}
+                        onCountryChange={(countryCode) => {
+                          if (!formData.country) {
+                            fetch(`/api/countries?code=${countryCode}`)
+                              .then(res => res.json())
+                              .then(data => {
+                                if (data.countries && data.countries.length > 0) {
+                                  setFormData(prev => ({ 
+                                    ...prev, 
+                                    country: data.countries[0].name,
+                                    countryCode 
+                                  }));
+                                }
+                              })
+                              .catch(console.error);
+                          } else {
+                            setFormData(prev => ({ ...prev, countryCode }));
+                          }
+                        }}
                         required
                       />
                     </div>
@@ -761,6 +824,7 @@ export default function SignupPage() {
                         <CountrySelect
                           value={formData.country}
                           onChange={(country) => setFormData({ ...formData, country })}
+                          onCountryCodeChange={(countryCode) => setFormData(prev => ({ ...prev, countryCode }))}
                           placeholder="Sélectionnez un pays"
                         />
                       </div>
@@ -773,6 +837,25 @@ export default function SignupPage() {
                         value={formData.phone}
                         onChange={(phone) => setFormData({ ...formData, phone })}
                         placeholder="1 23 45 67 89"
+                        selectedCountry={formData.countryCode}
+                        onCountryChange={(countryCode) => {
+                          if (!formData.country) {
+                            fetch(`/api/countries?code=${countryCode}`)
+                              .then(res => res.json())
+                              .then(data => {
+                                if (data.countries && data.countries.length > 0) {
+                                  setFormData(prev => ({ 
+                                    ...prev, 
+                                    country: data.countries[0].name,
+                                    countryCode 
+                                  }));
+                                }
+                              })
+                              .catch(console.error);
+                          } else {
+                            setFormData(prev => ({ ...prev, countryCode }));
+                          }
+                        }}
                         required
                       />
                     </div>
@@ -852,6 +935,25 @@ export default function SignupPage() {
                           value={formData.phone}
                           onChange={(phone) => setFormData({ ...formData, phone })}
                           placeholder="1 23 45 67 89"
+                          selectedCountry={formData.countryCode}
+                          onCountryChange={(countryCode) => {
+                            if (!formData.country) {
+                              fetch(`/api/countries?code=${countryCode}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                  if (data.countries && data.countries.length > 0) {
+                                    setFormData(prev => ({ 
+                                      ...prev, 
+                                      country: data.countries[0].name,
+                                      countryCode 
+                                    }));
+                                  }
+                                })
+                                .catch(console.error);
+                            } else {
+                              setFormData(prev => ({ ...prev, countryCode }));
+                            }
+                          }}
                           required
                         />
                       </div>
@@ -862,6 +964,7 @@ export default function SignupPage() {
                         <CountrySelect
                           value={formData.country}
                           onChange={(country) => setFormData({ ...formData, country })}
+                          onCountryCodeChange={(countryCode) => setFormData(prev => ({ ...prev, countryCode }))}
                           placeholder="Sélectionnez un pays"
                         />
                       </div>
@@ -941,6 +1044,7 @@ export default function SignupPage() {
                         <CountrySelect
                           value={formData.country}
                           onChange={(country) => setFormData({ ...formData, country })}
+                          onCountryCodeChange={(countryCode) => setFormData(prev => ({ ...prev, countryCode }))}
                           placeholder="Sélectionnez un pays"
                         />
                       </div>
@@ -953,6 +1057,25 @@ export default function SignupPage() {
                         value={formData.phone}
                         onChange={(phone) => setFormData({ ...formData, phone })}
                         placeholder="1 23 45 67 89"
+                        selectedCountry={formData.countryCode}
+                        onCountryChange={(countryCode) => {
+                          if (!formData.country) {
+                            fetch(`/api/countries?code=${countryCode}`)
+                              .then(res => res.json())
+                              .then(data => {
+                                if (data.countries && data.countries.length > 0) {
+                                  setFormData(prev => ({ 
+                                    ...prev, 
+                                    country: data.countries[0].name,
+                                    countryCode 
+                                  }));
+                                }
+                              })
+                              .catch(console.error);
+                          } else {
+                            setFormData(prev => ({ ...prev, countryCode }));
+                          }
+                        }}
                         required
                       />
                     </div>
@@ -1019,7 +1142,7 @@ export default function SignupPage() {
                           <option value="college">Collège</option>
                           <option value="lycee">Lycée</option>
                           <option value="universite">Université</option>
-                          <option value="prive">Etablissement privé</option>
+                          <option value="prive">Établissement privé</option>
                         </select>
                       </div>
                       <div>
@@ -1029,6 +1152,7 @@ export default function SignupPage() {
                         <CountrySelect
                           value={formData.country}
                           onChange={(country) => setFormData({ ...formData, country })}
+                          onCountryCodeChange={(countryCode) => setFormData(prev => ({ ...prev, countryCode }))}
                           placeholder="Sélectionnez un pays"
                         />
                       </div>
@@ -1041,6 +1165,25 @@ export default function SignupPage() {
                         value={formData.phone}
                         onChange={(phone) => setFormData({ ...formData, phone })}
                         placeholder="1 23 45 67 89"
+                        selectedCountry={formData.countryCode}
+                        onCountryChange={(countryCode) => {
+                          if (!formData.country) {
+                            fetch(`/api/countries?code=${countryCode}`)
+                              .then(res => res.json())
+                              .then(data => {
+                                if (data.countries && data.countries.length > 0) {
+                                  setFormData(prev => ({ 
+                                    ...prev, 
+                                    country: data.countries[0].name,
+                                    countryCode 
+                                  }));
+                                }
+                              })
+                              .catch(console.error);
+                          } else {
+                            setFormData(prev => ({ ...prev, countryCode }));
+                          }
+                        }}
                         required
                       />
                     </div>
@@ -1120,6 +1263,7 @@ export default function SignupPage() {
                         <CountrySelect
                           value={formData.country}
                           onChange={(country) => setFormData({ ...formData, country })}
+                          onCountryCodeChange={(countryCode) => setFormData(prev => ({ ...prev, countryCode }))}
                           placeholder="Sélectionnez un pays"
                         />
                       </div>
@@ -1132,6 +1276,25 @@ export default function SignupPage() {
                         value={formData.phone}
                         onChange={(phone) => setFormData({ ...formData, phone })}
                         placeholder="1 23 45 67 89"
+                        selectedCountry={formData.countryCode}
+                        onCountryChange={(countryCode) => {
+                          if (!formData.country) {
+                            fetch(`/api/countries?code=${countryCode}`)
+                              .then(res => res.json())
+                              .then(data => {
+                                if (data.countries && data.countries.length > 0) {
+                                  setFormData(prev => ({ 
+                                    ...prev, 
+                                    country: data.countries[0].name,
+                                    countryCode 
+                                  }));
+                                }
+                              })
+                              .catch(console.error);
+                          } else {
+                            setFormData(prev => ({ ...prev, countryCode }));
+                          }
+                        }}
                         required
                       />
                     </div>

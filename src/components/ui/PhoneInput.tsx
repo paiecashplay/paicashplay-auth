@@ -46,11 +46,13 @@ interface PhoneInputProps {
   placeholder?: string;
   className?: string;
   required?: boolean;
+  selectedCountry?: string; // Code pays pour synchronisation
+  onCountryChange?: (countryCode: string) => void; // Callback pour notifier le changement de pays
 }
 
-export default function PhoneInput({ value, onChange, placeholder = "Numéro de téléphone", className = '', required = false }: PhoneInputProps) {
+export default function PhoneInput({ value, onChange, placeholder = "Numéro de téléphone", className = '', required = false, selectedCountry, onCountryChange }: PhoneInputProps) {
   const [countries, setCountries] = useState<Country[]>(FALLBACK_COUNTRIES);
-  const [selectedCountry, setSelectedCountry] = useState<Country>(FALLBACK_COUNTRIES[0]); // France par défaut
+  const [currentCountry, setCurrentCountry] = useState<Country>(FALLBACK_COUNTRIES[0]); // France par défaut
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -72,7 +74,7 @@ export default function PhoneInput({ value, onChange, placeholder = "Numéro de 
         // Garder la France par défaut si disponible
         const france = fetchedCountries.find(c => c.code === 'FR');
         if (france) {
-          setSelectedCountry(france);
+          setCurrentCountry(france);
         }
       } catch (error) {
         console.error('Error loading countries:', error);
@@ -97,28 +99,47 @@ export default function PhoneInput({ value, onChange, placeholder = "Numéro de 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Synchroniser avec le pays sélectionné depuis l'extérieur
+  useEffect(() => {
+    if (selectedCountry && countries.length > 0) {
+      const country = countries.find(c => c.code === selectedCountry || c.name === selectedCountry);
+      if (country && country !== currentCountry) {
+        setCurrentCountry(country);
+        // Mettre à jour le numéro complet si on a déjà un numéro
+        if (phoneNumber) {
+          const fullPhone = `${country.dialCode} ${phoneNumber}`;
+          onChange(fullPhone);
+        }
+      }
+    }
+  }, [selectedCountry, countries, phoneNumber, onChange]);
+
   useEffect(() => {
     // Parse existing value
     if (value && !phoneNumber && countries.length > 0) {
       const country = countries.find(c => c.dialCode && value.startsWith(c.dialCode));
       if (country && country.dialCode) {
-        setSelectedCountry(country);
+        setCurrentCountry(country);
         setPhoneNumber(value.substring(country.dialCode.length).trim());
       }
     }
   }, [value, phoneNumber, countries]);
 
   const handleCountrySelect = (country: Country) => {
-    setSelectedCountry(country);
+    setCurrentCountry(country);
     setIsOpen(false);
     setSearch('');
     const fullPhone = phoneNumber ? `${country.dialCode} ${phoneNumber}` : '';
     onChange(fullPhone);
+    // Notifier le changement de pays
+    if (onCountryChange) {
+      onCountryChange(country.code);
+    }
   };
 
   const handlePhoneChange = (phone: string) => {
     setPhoneNumber(phone);
-    const fullPhone = phone && selectedCountry.dialCode ? `${selectedCountry.dialCode} ${phone}` : '';
+    const fullPhone = phone && currentCountry.dialCode ? `${currentCountry.dialCode} ${phone}` : '';
     onChange(fullPhone);
   };
 
@@ -132,9 +153,9 @@ export default function PhoneInput({ value, onChange, placeholder = "Numéro de 
             onClick={() => setIsOpen(!isOpen)}
             className="flex items-center px-2 sm:px-3 py-3 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-paiecash focus:border-transparent transition-colors min-w-0"
           >
-            <span className="text-base sm:text-lg mr-1 sm:mr-2">{selectedCountry.flag}</span>
-            <span className="text-xs sm:text-sm font-medium hidden xs:inline">{selectedCountry.dialCode || ''}</span>
-            <span className="text-xs sm:text-sm font-medium xs:hidden">{selectedCountry.dialCode?.replace('+', '') || ''}</span>
+            <span className="text-base sm:text-lg mr-1 sm:mr-2">{currentCountry.flag}</span>
+            <span className="text-xs sm:text-sm font-medium hidden xs:inline">{currentCountry.dialCode || ''}</span>
+            <span className="text-xs sm:text-sm font-medium xs:hidden">{currentCountry.dialCode?.replace('+', '') || ''}</span>
             <i className={`fas fa-chevron-down ml-1 sm:ml-2 text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`}></i>
           </button>
 

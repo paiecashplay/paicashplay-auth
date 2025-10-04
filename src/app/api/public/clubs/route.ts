@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
 
     const where: any = { 
       userType: 'club',
-      isActive: true,
-      isVerified: true
+      isActive: true
+      // isVerified retiré - les clubs peuvent être listés même non vérifiés
     };
 
     // Filtrer par pays si spécifié

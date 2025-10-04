@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireOAuthScope } from '@/lib/oauth-middleware';
 import { prisma } from '@/lib/prisma';
+import { getCountryVariants } from '@/lib/utils';
 
 // GET /api/oauth/clubs - Lister les clubs
 export const GET = requireOAuthScope(['clubs:read'])(async (request: NextRequest, context) => {
@@ -15,7 +16,12 @@ export const GET = requireOAuthScope(['clubs:read'])(async (request: NextRequest
   
   if (country || federation || league) {
     where.profile = {};
-    if (country) where.profile.country = country;
+    if (country) {
+      const countryVariants = getCountryVariants(country);
+      where.profile.country = {
+        in: countryVariants
+      };
+    }
     
     if (league) {
       where.profile.metadata = {
@@ -38,16 +44,21 @@ export const GET = requireOAuthScope(['clubs:read'])(async (request: NextRequest
   const total = await prisma.user.count({ where });
 
   return NextResponse.json({
-    clubs: clubs.map(club => ({
-      id: club.id,
-      email: club.email,
-      name: club.profile?.firstName || club.email,
-      country: club.profile?.country,
-      phone: club.profile?.phone,
-      isVerified: club.isVerified,
-      createdAt: club.createdAt,
-      metadata: club.profile?.metadata
-    })),
+    clubs: clubs.map(club => {
+      const metadata = club.profile?.metadata as any;
+      return {
+        id: club.id,
+        email: club.email,
+        name: metadata?.organizationName || club.email,
+        country: club.profile?.country,
+        phone: club.profile?.phone,
+        isVerified: club.isVerified,
+        isActive: club.isActive,
+        createdAt: club.createdAt,
+        updatedAt: club.updatedAt,
+        metadata: metadata
+      };
+    }),
     pagination: {
       page,
       limit,

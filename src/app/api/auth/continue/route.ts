@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     
     // Vérifier que la session OAuth existe
     const session = await prisma.oAuthSession.findUnique({
-      where: { sessionId: oauthSession },
+      where: { id: oauthSession },
       include: { client: true }
     });
     
@@ -26,7 +26,9 @@ export async function GET(request: NextRequest) {
     authorizeUrl.searchParams.set('response_type', session.responseType);
     authorizeUrl.searchParams.set('client_id', session.clientId);
     authorizeUrl.searchParams.set('redirect_uri', session.redirectUri);
-    authorizeUrl.searchParams.set('scope', session.scope);
+    if (session.scope) {
+      authorizeUrl.searchParams.set('scope', session.scope);
+    }
     if (session.state) {
       authorizeUrl.searchParams.set('state', session.state);
     }

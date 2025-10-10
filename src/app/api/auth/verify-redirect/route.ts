@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
           id: oauthSessionId,
           clientId,
           redirectUri,
+          responseType: 'code',
           scope: scope || 'openid profile email',
           state,
           expiresAt: new Date(Date.now() + 10 * 60 * 1000)

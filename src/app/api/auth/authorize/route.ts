@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { OAuthService } from '@/lib/oauth';
 import { cookies } from 'next/headers';
 import { createRedirectUrl, createAbsoluteUrl } from '@/lib/url-utils';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
       id: oauthSessionId,
       clientId: client.client_id,
       redirectUri: redirect_uri,
+      responseType: response_type,
       scope,
       state,
       expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
@@ -141,12 +143,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
   
-  // User is already authenticated - redirect to continue with OAuth session
-  const continueUrl = createAbsoluteUrl('/api/auth/continue');
-  continueUrl.searchParams.set('oauth_session', oauthSessionId);
+  // User is already authenticated - generate authorization code directly
+  const code = await OAuthService.createAuthorizationCode(
+    client.client_id,
+    userId,
+    redirect_uri,
+    scope
+  );
   
-  console.log('✅ User authenticated, redirecting to continue:', continueUrl.toString());
-  return NextResponse.redirect(continueUrl);
+  // Supprimer la session OAuth (usage unique)
+  await prisma.oAuthSession.delete({
+    where: { id: oauthSessionId }
+  });
+  
+  // Rediriger vers le client avec le code
+  const redirectUrl = new URL(redirect_uri);
+  redirectUrl.searchParams.set('code', code);
+  if (state) {
+    redirectUrl.searchParams.set('state', state);
+  }
+  
+  console.log('✅ User authenticated, redirecting to client:', redirectUrl.toString());
+  return NextResponse.redirect(redirectUrl);
 }
 
 export async function POST(request: NextRequest) {
